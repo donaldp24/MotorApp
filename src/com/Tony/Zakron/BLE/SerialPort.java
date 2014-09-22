@@ -8,6 +8,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Created with IntelliJ IDEA.
@@ -38,6 +39,7 @@ public class SerialPort {
     public static final int SERIAL_PORT_SERVICE_UUID_LEN = 16;
     public static final int CHARACT_UUID_SERIAL_LEN = 16;
     
+    public static final String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
     protected static final UUID CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
 
     private final byte serialPortServiceUuid[] = {
@@ -132,33 +134,46 @@ public class SerialPort {
     BluetoothGattService          _deviceIdService;
     BluetoothGattCharacteristic     _fwVersionCharacteristic;
     BluetoothGattCharacteristic     _modelNumberCharacteristic;
+    
+    ConcurrentLinkedQueue<MsgItem>	_queue;
+    boolean _finishOperation;
+    
+    Thread _threadOperation = new Thread(new Runnable() {
+    	@Override
+    	public void run() {
+    		while(!_finishOperation)
+    		{
+    			MsgItem item = _queue.poll();
+    			if (item != null)
+    				doOperation(item);
+				else
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+    		}
+    	}
+    });
 
     // Implements callback methods for GATT events that the app cares about.  For example,
     // connection change and services discovered.
     private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-            String intentAction;
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-
                 _bluetoothGatt = gatt;
                 _connectionState = STATE_CONNECTED;
 
-                if (_connDelegate != null)
-                    _connDelegate.didConnectWithError(SerialPort.this, null);
-
-                CommonMethods.Log("Connected to GATT server.");
-
-                // Attempts to discover services after successful connection.
-                //CommonMethods.Log("Attempting to start service discovery:" + _bluetoothGatt.discoverServices());
+                MsgItem item = MsgItem.onConnectItem(true);
+                _queue.offer(item);
 
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                //intentAction = ACTION_GATT_DISCONNECTED;
+
                 _connectionState = STATE_DISCONNECTED;
-                CommonMethods.Log("Disconnected from GATT server.");
-                //broadcastUpdate(intentAction);
-                if (_connDelegate != null)
-                    _connDelegate.didDisconnectWithError(SerialPort.this, null);
+                MsgItem item = MsgItem.onDisconnectedItem();
+                _queue.offer(item);
             }
         }
 
@@ -166,57 +181,11 @@ public class SerialPort {
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
         	
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                //broadcastUpdate(ACTION_GATT_SERVICES_DISCOVERED);
-            	_service = null;
-            	
-                // get service & characteristics
-            	List<BluetoothGattService> services = gatt.getServices();
-            	CommonMethods.Log("onServiceDiscovered : count - %d", services.size());
-            	
-            	if (services.size() > 0)
-            	{
-            		_service = _bluetoothGatt.getService(CommonMethods.toUUID(serialPortServiceUuid));
-            		_deviceIdService = _bluetoothGatt.getService(CommonMethods.toUUID(deviceIdServiceUuid[0], deviceIdServiceUuid[1]));
-            	}
-            	
-                if (_service != null)
-                {
-                	CommonMethods.Log("onServicesDiscovered serialPortService discovered");
-                }
-                else
-                {
-                	CommonMethods.Log("onServicesDiscovered serialPortService == null");
-                }
-
-                
-                if (_deviceIdService != null)
-                {
-                	CommonMethods.Log("onServicesDiscovered deviceIdService discovered");
-                }
-                else
-                {
-                	CommonMethods.Log("onServicesDiscovered _deviceIdService == null");
-                }
-
-                if((_service != null) && (_deviceIdService != null))
-                {
-                	CommonMethods.Log("onServicesDiscovered state changing to SP_S_WAIT_CHARCT_SEARCH -- discovering characteristics");
-                	
-                    _state = SPState.SP_S_WAIT_CHARACT_SEARCH;
-                    discoverCharacteristics();
-                }
-                else
-                {
-                	CommonMethods.Log("onServicesDiscovered service == null or deviceIdService == null");
-                	
-                    _state = SPState.SP_S_ERROR;
-                    _delegate.portEvent(SerialPort.this, SerialPortDelegate.SPEvent.SP_EVT_OPEN, -1);
-                }
-
-                CommonMethods.Log("onServicesDiscovered end-  --------------- ");
-
+                MsgItem item = MsgItem.onServiceDiscoveredItem(true);
+                _queue.offer(item);
             } else {
-                CommonMethods.Log("onServicesDiscovered received: " + status);
+            	MsgItem item = MsgItem.onServiceDiscoveredItem(false);
+                _queue.offer(item);
             }
         }
 
@@ -225,21 +194,20 @@ public class SerialPort {
                                          BluetoothGattCharacteristic characteristic,
                                          int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-            	 CommonMethods.Log("onCharacteristicRead ---------");
-                //broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
-                 didUpdateValueForCharacteristic(characteristic, null);
+            	MsgItem item = MsgItem.onCharacteristicReadItem(characteristic, true);
+            	_queue.offer(item);
             }
             else {
-                CommonMethods.Log("onCharacteristicRead failed : %d", status);
+            	MsgItem item = MsgItem.onCharacteristicReadItem(characteristic, false);
+            	_queue.offer(item);
             }
         }
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt,
                                             BluetoothGattCharacteristic characteristic) {
-        	CommonMethods.Log("onCharacteristicChanged ---------");
-            //broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
-            didUpdateValueForCharacteristic(characteristic, null);
+        	MsgItem item = MsgItem.onCharacteristicChangedItem(characteristic, true);
+        	_queue.offer(item);
         }
 
         @Override
@@ -247,80 +215,16 @@ public class SerialPort {
                                           BluetoothGattCharacteristic characteristic,
                                           int status) {
         	
-        	CommonMethods.Log("onCharacteristicWrite ---------");
-        	/*
-
-            if((characteristic == _creditsCharacteristic) || (characteristic == _fifoCharacteristic))
-            {
-            	if (_stateTx != SPStateTx.SP_S_TX_IN_PROGRESS){
-            		CommonMethods.Log("_stattx != SPStateTx.SP_S_TX_IN_PROGRESS");
-            	}
-                //NSAssert2(stateTx == SP_S_TX_IN_PROGRESS, @"%s, %d", __FILE__, __LINE__);
-
-                _stateTx = SPStateTx.SP_S_TX_IDLE;
-
-                if(_pendingCredits == true)
-                {
-                    byte[] p = _dataRxCredits;
-
-                    _nRxCredits = (int)(p[0]);
-
-                    if(_serialPortVersion == 1)
-                    {
-                        _creditsCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-                        _creditsCharacteristic.setValue(_dataRxCredits);
-                        _bluetoothGatt.writeCharacteristic(_creditsCharacteristic);
-                    }
-                    else
-                    {
-                        _creditsCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-                        _creditsCharacteristic.setValue(_dataRxCredits);
-                        _bluetoothGatt.writeCharacteristic(_creditsCharacteristic);
-
-                        _stateTx = SPStateTx.SP_S_TX_IN_PROGRESS;
-                    }
-
-                    _pendingCredits = false;
-                }
-                else if( (_nTxCredits > 0) && (_pendingData != null))
-                {
-                    _nTxCredits--;
-
-                    _nTxCnt++;
-
-                    if((_nTxCnt < SP_WRITE_WITH_RESPONSE_CNT) || (_nTxCnt == -1) || (_serialPortVersion == 1))
-                    {
-                        _fifoCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-                        _fifoCharacteristic.setValue(_pendingData);
-                        _bluetoothGatt.writeCharacteristic(_fifoCharacteristic);
-
-                        _pendingData = null;
-
-                        //[self performSelector:@selector(writeCompleteSelector) withObject:nil afterDelay:SP_WRITE_COMPLETE_TIMEOUT];
-                        writeCompleteSelector();
-                    }
-                    else
-                    {
-                        _fifoCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-                        _fifoCharacteristic.setValue(_pendingData);
-                        _bluetoothGatt.writeCharacteristic(_fifoCharacteristic);
-
-                        _pendingData = null;
-                        _nTxCnt = 0;
-
-                        _stateTx = SPStateTx.SP_S_TX_IN_PROGRESS;
-                    }
-                }
-
-                if(characteristic == _fifoCharacteristic)
-                {
-                    if(status == BluetoothGatt.GATT_SUCCESS)
-                        _delegate.writeComplete(SerialPort.this, 0);
-                    else
-                        _delegate.writeComplete(SerialPort.this, -1);
-                }
-            }
-            */
+        	if (status == BluetoothGatt.GATT_SUCCESS)
+        	{
+        		MsgItem item = MsgItem.onCharacteristicWriteItem(characteristic, true);
+        		_queue.offer(item);
+        	}
+        	else
+        	{
+        		MsgItem item = MsgItem.onCharacteristicWriteItem(characteristic, false);
+        		_queue.offer(item);
+        	}
         }
         
         @Override
@@ -328,15 +232,13 @@ public class SerialPort {
         {
         	if (status == BluetoothGatt.GATT_SUCCESS)
         	{
-        		CommonMethods.Log("onDescriptorRead-- success");
+        		MsgItem item = MsgItem.onDescriptorReadItem(descriptor.getCharacteristic(), true);
+        		_queue.offer(item);
         	}
         	else
         	{
-        		CommonMethods.Log("onDescriptorRead-- failed");
-        	}
-        	if (descriptor.getCharacteristic() == _creditsCharacteristic)
-        	{
-        		//
+        		MsgItem item = MsgItem.onDescriptorReadItem(descriptor.getCharacteristic(), false);
+        		_queue.offer(item);
         	}
         }
         
@@ -345,11 +247,13 @@ public class SerialPort {
         {
         	if (status == BluetoothGatt.GATT_SUCCESS)
         	{
-        		CommonMethods.Log("onDescriptorWrite-- success");
+        		MsgItem item = MsgItem.onDescriptorWriteItem(descriptor.getCharacteristic(), true);
+        		_queue.offer(item);
         	}
         	else
         	{
-        		CommonMethods.Log("onDescriptorWrite-- failed");
+        		MsgItem item = MsgItem.onDescriptorWriteItem(descriptor.getCharacteristic(), false);
+        		_queue.offer(item);
         	}
         }
     };
@@ -379,6 +283,10 @@ public class SerialPort {
 
         _state = SPState.SP_S_CLOSED;
         _stateTx = SPStateTx.SP_S_TX_IDLE;
+        
+        _queue = new ConcurrentLinkedQueue<SerialPort.MsgItem>();
+        _finishOperation = false;
+        _threadOperation.start();
     }
 
     public int getVersionFromString(String sVersion)
@@ -495,93 +403,31 @@ public class SerialPort {
 
     public void openSerialPortService()
     {
-    	Thread thread = new Thread(new Runnable() {
-			
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				CommonMethods.Log("openSerialPortService ---");
-		        _serialPortVersion = getSerialPortVersion();
-		        
-		        CommonMethods.Log("serialPortVersion = %d, changing state to SP_S_WAIT_INITIAL_TX_CREDITS", _serialPortVersion);
+		// TODO Auto-generated method stub
+		CommonMethods.Log("openSerialPortService ---");
+        _serialPortVersion = getSerialPortVersion();
+        
+        CommonMethods.Log("serialPortVersion = %d, changing state to SP_S_WAIT_INITIAL_TX_CREDITS", _serialPortVersion);
 
-		        _state = SPState.SP_S_WAIT_INITIAL_TX_CREDITS;
+        _state = SPState.SP_S_WAIT_INITIAL_TX_CREDITS;
 
-		        if(_serialPortVersion == 1)
-		        {
-		            _bluetoothGatt.setCharacteristicNotification(_fifoCharacteristic, true);
-		            _bluetoothGatt.setCharacteristicNotification(_creditsCharacteristic, true);
-		        }
-		        else
-		        {
-		        	
-		            // Current version
-		        	_bluetoothGatt.setCharacteristicNotification(_creditsCharacteristic, false);
-		            BluetoothGattDescriptor descriptor = _creditsCharacteristic.getDescriptor(
-		                    CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID);
-		            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-		            _bluetoothGatt.writeDescriptor(descriptor);
-		            try {
-						Thread.sleep(4000);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-		            
-		            _bluetoothGatt.setCharacteristicNotification(_creditsCharacteristic, true);
-		            descriptor = _creditsCharacteristic.getDescriptor(
-		                    CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID);
-		            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-		            _bluetoothGatt.writeDescriptor(descriptor);
-		            
-		            try {
-						Thread.sleep(4000);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-		            
-		            _bluetoothGatt.setCharacteristicNotification(_fifoCharacteristic, false);
-		            descriptor = _fifoCharacteristic.getDescriptor(
-		                    CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID);
-		            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-		            _bluetoothGatt.writeDescriptor(descriptor);
-		            
-		            try {
-						Thread.sleep(4000);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-		            
-		            _bluetoothGatt.setCharacteristicNotification(_fifoCharacteristic, true);
-		            descriptor = _fifoCharacteristic.getDescriptor(
-		                    CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID);
-		            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-		            _bluetoothGatt.writeDescriptor(descriptor);
-		            try {
-						Thread.sleep(4000);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-		        }
-		        
-		        boolean bval = _creditsCharacteristic.setValue(_dataRxCredits);
-		        if (bval == false)
-		        {
-		        	CommonMethods.Log("failed to setValue - _creditsCharactersitic");
-		        }
-		        _creditsCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-		        boolean bret = _bluetoothGatt.writeCharacteristic(_creditsCharacteristic);
-		        if (bret == false)
-		        {
-		        	CommonMethods.Log("failed to write characteristics : _creditsCharacteristic");
-		        }
-			}
-		});
-    	
-    	thread.start();
+        if(_serialPortVersion == 1)
+        {
+        	MsgItem item = MsgItem.setNotificationItem(_fifoCharacteristic, true);
+        	_queue.offer(item);
+        	item = MsgItem.setNotificationItem(_creditsCharacteristic, true);
+            _queue.offer(item);
+        }
+        else
+        {
+        	MsgItem item = MsgItem.setNotificationItem(_creditsCharacteristic, true);
+        	_queue.offer(item);
+            item = MsgItem.setNotificationItem(_fifoCharacteristic, true);
+            _queue.offer(item);
+        }
+        
+        MsgItem item = MsgItem.writeItem(_creditsCharacteristic, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE, _dataRxCredits);
+        _queue.offer(item);
     }
 
     public void discoverServices()
@@ -591,105 +437,70 @@ public class SerialPort {
 
     public void discoverCharacteristics()
     {
-    	Thread thread = new Thread(new Runnable() {
-			
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				
-				// discover for service
-		    	List<BluetoothGattCharacteristic> characteristics = _service.getCharacteristics();
-		    	CommonMethods.Log("discoverCharacteristics - service - characteristics count : %d", characteristics.size());
-		    	
-		    	if (characteristics.size() > 0)
-		        {
-		            _fifoCharacteristic = _service.getCharacteristic(CommonMethods.toUUID(serialPortFifoCharactUuid));
-		            _creditsCharacteristic = _service.getCharacteristic(CommonMethods.toUUID(creditsCharactUuid));
-		        }
-		    	
-		        if (_fifoCharacteristic == null)
-		        {
-		        	CommonMethods.Log("discoverCharacteristics _fifo == null");
-		        }
-		        if (_creditsCharacteristic == null)
-		        {
-		        	CommonMethods.Log("discoverCharacteristics _credit == null");
-		        }
-		        
-		    	
-		        // discover for deviceIdService
-		        characteristics = _deviceIdService.getCharacteristics();
-		    	CommonMethods.Log("discoverCharacteristics - deviceIdService - characteristics count : %d", characteristics.size());
-		    	if (characteristics.size() > 0)
-		    	{
-		            _modelNumberCharacteristic = _deviceIdService.getCharacteristic(CommonMethods.toUUID(modelNumberCharactUuid[0], modelNumberCharactUuid[1]));
-		            _fwVersionCharacteristic = _deviceIdService.getCharacteristic(CommonMethods.toUUID(firmwareRevisionCharactUuid[0], firmwareRevisionCharactUuid[1]));
-		    	}
-		    	
-		    	if (_fwVersionCharacteristic == null)
-		        {
-		        	CommonMethods.Log("discoverCharacteristics _fwVersionCharacteristic == null");
-		        }
-		        else
-		        {
-		        	if (_bluetoothGatt.readCharacteristic(_fwVersionCharacteristic) == true)
-		        	{
-		        		CommonMethods.Log("discoverCharacteristics - readCharacteristics : _fwVersionCharacteristic : success");
-		        	}
-		        	else
-		        	{
-		        		CommonMethods.Log("discoverCharacteristics - readCharacteristics : _fwVersionCharacteristic : success");
-		        	}
-		        }
-		    	
-		    	try {
-					Thread.sleep(3000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-		    	
-		        if (_modelNumberCharacteristic == null)
-		        {
-		        	CommonMethods.Log("discoverCharacteristics modelnumber == null");
-		        }
-		        else
-		        {
-		        	if (_bluetoothGatt.readCharacteristic(_modelNumberCharacteristic) == true)
-		        	{
-		        		CommonMethods.Log("discoverCharacteristics - readCharacteristics : modelNumberCharacteristic : success");
-		        	}
-		        	else
-		        	{
-		        		CommonMethods.Log("discoverCharacteristics - readCharacteristics : modelNumberCharacteristic : failed");
-		        	}
-		        }
-		        
-		        
-		        
-		        
-		        if ((_fifoCharacteristic != null) &&
-		        		(_creditsCharacteristic != null) &&
-		        		((_creditsCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_NOTIFY) != 0) &&
-		        		(_modelNumberCharacteristic != null) &&
-		        		(_modelNumberCharacteristic.getValue() != null) &&
-		        		(_fwVersionCharacteristic != null) &&
-		        		(_fwVersionCharacteristic.getValue() != null))
-		        {
-		        	CommonMethods.Log("discoverCharacteristics calling openSerialPortService()");
-		        	
-		        	openSerialPortService();
-		        }
-		        else
-		        {
-		        	CommonMethods.Log("discoverCharacteristics not called openSerialPortService() == null");
-		        }
-				
-			}
-		});
+    	// discover for service
+    	List<BluetoothGattCharacteristic> characteristics = _service.getCharacteristics();
+    	CommonMethods.Log("discoverCharacteristics - service - characteristics count : %d", characteristics.size());
     	
-    	thread.start();
-
+    	if (characteristics.size() > 0)
+        {
+            _fifoCharacteristic = _service.getCharacteristic(CommonMethods.toUUID(serialPortFifoCharactUuid));
+            _creditsCharacteristic = _service.getCharacteristic(CommonMethods.toUUID(creditsCharactUuid));
+        }
+    	
+        if (_fifoCharacteristic == null)
+        {
+        	CommonMethods.Log("discoverCharacteristics _fifo == null");
+        }
+        if (_creditsCharacteristic == null)
+        {
+        	CommonMethods.Log("discoverCharacteristics _credit == null");
+        }
+    	
+        // discover for deviceIdService
+        characteristics = _deviceIdService.getCharacteristics();
+    	CommonMethods.Log("discoverCharacteristics - deviceIdService - characteristics count : %d", characteristics.size());
+    	if (characteristics.size() > 0)
+    	{
+            _modelNumberCharacteristic = _deviceIdService.getCharacteristic(CommonMethods.toUUID(modelNumberCharactUuid[0], modelNumberCharactUuid[1]));
+            _fwVersionCharacteristic = _deviceIdService.getCharacteristic(CommonMethods.toUUID(firmwareRevisionCharactUuid[0], firmwareRevisionCharactUuid[1]));
+    	}
+    	
+    	if (_fwVersionCharacteristic == null)
+        {
+        	CommonMethods.Log("discoverCharacteristics _fwVersionCharacteristic == null");
+        }
+        else
+        {
+        	MsgItem item = MsgItem.readItem(_fwVersionCharacteristic);
+        	_queue.offer(item);
+        }
+    	
+        if (_modelNumberCharacteristic == null)
+        {
+        	CommonMethods.Log("discoverCharacteristics modelnumber == null");
+        }
+        else
+        {
+        	MsgItem item = MsgItem.readItem(_modelNumberCharacteristic);
+        	_queue.offer(item);
+        }
+        
+        if ((_fifoCharacteristic != null) &&
+        		(_creditsCharacteristic != null) &&
+        		((_creditsCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_NOTIFY) != 0) &&
+        		(_modelNumberCharacteristic != null) &&
+        		(_modelNumberCharacteristic.getValue() != null) &&
+        		(_fwVersionCharacteristic != null) &&
+        		(_fwVersionCharacteristic.getValue() != null))
+        {
+        	CommonMethods.Log("discoverCharacteristics calling openSerialPortService()");
+        	
+        	openSerialPortService();
+        }
+        else
+        {
+        	CommonMethods.Log("discoverCharacteristics not called openSerialPortService() == null");
+        }
     }
 
     /**
@@ -808,17 +619,22 @@ public class SerialPort {
             if(_serialPortVersion == 1)
             {
                 if(_creditsCharacteristic != null)
-                    _bluetoothGatt.setCharacteristicNotification(_creditsCharacteristic, false);
+                {
+                	MsgItem item = MsgItem.setNotificationItem(_creditsCharacteristic, false);
+                    _queue.offer(item);
+                }
                 if(_fifoCharacteristic != null)
-                    _bluetoothGatt.setCharacteristicNotification(_fifoCharacteristic, false);
+                {
+                	MsgItem item = MsgItem.setNotificationItem(_fifoCharacteristic, false);
+                    _queue.offer(item);
+                }
             }
             else
             {
                 if (_creditsCharacteristic != null)
                 {
-                    _creditsCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-                    _creditsCharacteristic.setValue(_disconnectCredit);
-                    _bluetoothGatt.writeCharacteristic(_creditsCharacteristic);
+                	MsgItem item = MsgItem.writeItem(_creditsCharacteristic, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE, _disconnectCredit);
+                    _queue.offer(item);
                 }
             }
         }
@@ -869,18 +685,14 @@ public class SerialPort {
 
                     if((_nTxCnt < SP_WRITE_WITH_RESPONSE_CNT) || (_nTxCnt == -1) || (_serialPortVersion == 1))
                     {
-                        _fifoCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-                        _fifoCharacteristic.setValue(data);
-                        _bluetoothGatt.writeCharacteristic(_fifoCharacteristic);
-                        //[self performSelector:@selector(writeCompleteSelector) withObject:nil afterDelay:SP_WRITE_COMPLETE_TIMEOUT];
+                    	MsgItem item = MsgItem.writeItem(_fifoCharacteristic, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE, data);
+                        _queue.offer(item);
                         writeCompleteSelector();
                     }
                     else
                     {
-                        _fifoCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-                        _fifoCharacteristic.setValue(data);
-                        _bluetoothGatt.writeCharacteristic(_fifoCharacteristic);
-                        //[peripheral writeValue:data forCharacteristic:fifoCharacteristic type:CBCharacteristicWriteWithResponse];
+                    	MsgItem item = MsgItem.writeItem(_fifoCharacteristic, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT, data);
+                    	_queue.offer(item);
 
                         _nTxCnt = 0;
 
@@ -976,9 +788,8 @@ public class SerialPort {
 
                         if((_nTxCnt < SP_WRITE_WITH_RESPONSE_CNT) || (_nTxCnt == -1) || (_serialPortVersion == 1))
                         {
-                            _fifoCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-                            _fifoCharacteristic.setValue(_pendingData);
-                            _bluetoothGatt.writeCharacteristic(_fifoCharacteristic);
+                        	MsgItem item = MsgItem.writeItem(_fifoCharacteristic, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE, _pendingData);
+                        	_queue.offer(item);
 
                             _pendingData = null;
 
@@ -987,9 +798,8 @@ public class SerialPort {
                         }
                         else
                         {
-                            _fifoCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-                            _fifoCharacteristic.setValue(_pendingData);
-                            _bluetoothGatt.writeCharacteristic(_fifoCharacteristic);
+                        	MsgItem item = MsgItem.writeItem(_fifoCharacteristic, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT, _pendingData);
+                        	_queue.offer(item);
 
                             _pendingData = null;
 
@@ -1019,15 +829,13 @@ public class SerialPort {
 
                             if(_serialPortVersion == 1)
                             {
-                                _creditsCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-                                _creditsCharacteristic.setValue(_dataRxCredits);
-                                _bluetoothGatt.writeCharacteristic(_creditsCharacteristic);
+                            	MsgItem item = MsgItem.writeItem(_creditsCharacteristic, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE, _dataRxCredits);
+                            	_queue.offer(item);
                             }
                             else
                             {
-                                _creditsCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-                                _creditsCharacteristic.setValue(_dataRxCredits);
-                                _bluetoothGatt.writeCharacteristic(_creditsCharacteristic);
+                            	MsgItem item = MsgItem.writeItem(_creditsCharacteristic, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT, _dataRxCredits);
+                            	_queue.offer(item);
 
                                 _stateTx = SPStateTx.SP_S_TX_IN_PROGRESS;
                             }
@@ -1046,5 +854,444 @@ public class SerialPort {
                 break;
         }
 
+    }
+    
+    public boolean setCharacteristicNotification(BluetoothGatt bluetoothGatt, BluetoothGattCharacteristic characteristic, boolean enabled)
+    {
+    	boolean ret = bluetoothGatt.setCharacteristicNotification(characteristic, enabled);
+    	if (ret == false)
+    		return ret;
+    	BluetoothGattDescriptor descriptor = characteristic.getDescriptor(UUID.fromString(CLIENT_CHARACTERISTIC_CONFIG));
+    	if (descriptor == null)
+    		return false;
+    	descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+    	return bluetoothGatt.writeDescriptor(descriptor);
+    }
+    
+    
+    private void doOperation(MsgItem item)
+    {
+    	boolean success = false;
+    	if (item == null)
+    		return;
+    	switch(item.iOperation)
+    	{
+    	case MsgItem.ON_CONNECTED:
+    		if (_connDelegate != null)
+                _connDelegate.didConnectWithError(SerialPort.this, null);
+
+            CommonMethods.Log("Connected to GATT server.");
+            break;
+            
+    	case MsgItem.ON_DISCONNECTED:
+            if (_connDelegate != null)
+                _connDelegate.didDisconnectWithError(SerialPort.this, null);
+            
+            CommonMethods.Log("Disconnected from GATT server.");
+    		break;
+    		
+    	case MsgItem.ON_SERVICE_DISCOVERED:
+    		
+    		if (item.value[0] == 1)
+    			success = true;
+    		else
+    			success = false;
+    		if (success)
+    		{
+	        	_service = null;
+	        	_deviceIdService = null;
+	        	
+	            // get service & characteristics
+	        	List<BluetoothGattService> services = _bluetoothGatt.getServices();
+	        	CommonMethods.Log("onServiceDiscovered : count - %d", services.size());
+	        	
+	        	if (services.size() > 0)
+	        	{
+	        		_service = _bluetoothGatt.getService(CommonMethods.toUUID(serialPortServiceUuid));
+	        		_deviceIdService = _bluetoothGatt.getService(CommonMethods.toUUID(deviceIdServiceUuid[0], deviceIdServiceUuid[1]));
+	        	}
+	        	
+	            if (_service != null)
+	            {
+	            	CommonMethods.Log("onServicesDiscovered serialPortService discovered");
+	            }
+	            else
+	            {
+	            	CommonMethods.Log("onServicesDiscovered serialPortService == null");
+	            }
+	
+	            
+	            if (_deviceIdService != null)
+	            {
+	            	CommonMethods.Log("onServicesDiscovered deviceIdService discovered");
+	            }
+	            else
+	            {
+	            	CommonMethods.Log("onServicesDiscovered _deviceIdService == null");
+	            }
+	
+	            if((_service != null) && (_deviceIdService != null))
+	            {
+	            	CommonMethods.Log("onServicesDiscovered state changing to SP_S_WAIT_CHARCT_SEARCH -- discovering characteristics");
+	            	
+	                _state = SPState.SP_S_WAIT_CHARACT_SEARCH;
+	                discoverCharacteristics();
+	            }
+	            else
+	            {
+	            	CommonMethods.Log("onServicesDiscovered service == null or deviceIdService == null");
+	            	
+	                _state = SPState.SP_S_ERROR;
+	                _delegate.portEvent(SerialPort.this, SerialPortDelegate.SPEvent.SP_EVT_OPEN, -1);
+	            }
+	
+	            CommonMethods.Log("onServicesDiscovered end-  --------------- ");
+    		}
+    		else
+    		{
+    			CommonMethods.Log("onServicesDiscovered false");
+    		}
+    		break;
+    		
+    	case MsgItem.ON_CHARACTERISTIC_READ:
+    		if (item.value[0] == 1)
+    			success = true;
+    		else
+    			success = false;
+    		if (success)
+    		{
+	    		 CommonMethods.Log("onCharacteristicRead ---------");
+	             didUpdateValueForCharacteristic(item.characteristic, null);
+    		}
+    		else
+    		{
+    			CommonMethods.Log("onCharacteristicRead failed !");
+    		}
+    		break;
+    		
+    	case MsgItem.ON_CHARACTERISTIC_CHANGED:
+    		CommonMethods.Log("onCharacteristicChanged ---------");
+            didUpdateValueForCharacteristic(item.characteristic, null);
+    		break;
+    		
+    	case MsgItem.ON_CHARACTERISTIC_WRITE:
+    		CommonMethods.Log("onCharacteristicWrite ---------");
+    		if (item.value[0] == 1)
+    			success = true;
+    		else
+    			success = false;
+    		if (success)
+    		{
+	        	/*
+	
+	            if((characteristic == _creditsCharacteristic) || (characteristic == _fifoCharacteristic))
+	            {
+	            	if (_stateTx != SPStateTx.SP_S_TX_IN_PROGRESS){
+	            		CommonMethods.Log("_stattx != SPStateTx.SP_S_TX_IN_PROGRESS");
+	            	}
+	                //NSAssert2(stateTx == SP_S_TX_IN_PROGRESS, @"%s, %d", __FILE__, __LINE__);
+	
+	                _stateTx = SPStateTx.SP_S_TX_IDLE;
+	
+	                if(_pendingCredits == true)
+	                {
+	                    byte[] p = _dataRxCredits;
+	
+	                    _nRxCredits = (int)(p[0]);
+	
+	                    if(_serialPortVersion == 1)
+	                    {
+	                        _creditsCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
+	                        _creditsCharacteristic.setValue(_dataRxCredits);
+	                        _bluetoothGatt.writeCharacteristic(_creditsCharacteristic);
+	                    }
+	                    else
+	                    {
+	                        _creditsCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+	                        _creditsCharacteristic.setValue(_dataRxCredits);
+	                        _bluetoothGatt.writeCharacteristic(_creditsCharacteristic);
+	
+	                        _stateTx = SPStateTx.SP_S_TX_IN_PROGRESS;
+	                    }
+	
+	                    _pendingCredits = false;
+	                }
+	                else if( (_nTxCredits > 0) && (_pendingData != null))
+	                {
+	                    _nTxCredits--;
+	
+	                    _nTxCnt++;
+	
+	                    if((_nTxCnt < SP_WRITE_WITH_RESPONSE_CNT) || (_nTxCnt == -1) || (_serialPortVersion == 1))
+	                    {
+	                        _fifoCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
+	                        _fifoCharacteristic.setValue(_pendingData);
+	                        _bluetoothGatt.writeCharacteristic(_fifoCharacteristic);
+	
+	                        _pendingData = null;
+	
+	                        //[self performSelector:@selector(writeCompleteSelector) withObject:nil afterDelay:SP_WRITE_COMPLETE_TIMEOUT];
+	                        writeCompleteSelector();
+	                    }
+	                    else
+	                    {
+	                        _fifoCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+	                        _fifoCharacteristic.setValue(_pendingData);
+	                        _bluetoothGatt.writeCharacteristic(_fifoCharacteristic);
+	
+	                        _pendingData = null;
+	                        _nTxCnt = 0;
+	
+	                        _stateTx = SPStateTx.SP_S_TX_IN_PROGRESS;
+	                    }
+	                }
+	
+	                if(characteristic == _fifoCharacteristic)
+	                {
+	                    if(status == BluetoothGatt.GATT_SUCCESS)
+	                        _delegate.writeComplete(SerialPort.this, 0);
+	                    else
+	                        _delegate.writeComplete(SerialPort.this, -1);
+	                }
+	            }
+	        	 */
+    		}
+    		else
+    		{
+    			//
+    		}
+    		break;
+    	case MsgItem.ON_DESCRIPTOR_READ:
+    		if (item.value[0] == 1)
+    			success = true;
+    		else
+    			success = false;
+    		if (success)
+        	{
+        		CommonMethods.Log("onDescriptorRead-- success");
+        	}
+        	else
+        	{
+        		CommonMethods.Log("onDescriptorRead-- failed");
+        	}
+    		break;
+    		
+    	case MsgItem.ON_DESCRIPTOR_WRITE:
+    		if (item.value[0] == 1)
+    			success = true;
+    		else
+    			success = false;
+    		if (success)
+        	{
+        		CommonMethods.Log("onDescriptorWrite-- success");
+        	}
+        	else
+        	{
+        		CommonMethods.Log("onDescriptorWrite-- failed");
+        	}
+    		break;
+    		
+    	case MsgItem.READ_CHARACTERISTIC:
+    		_bluetoothGatt.readCharacteristic(item.characteristic);
+    		break;
+    		
+    	case MsgItem.WRITE_CHARACTERISTIC:
+    		int writeType = item.value[0];
+    		byte value[] = new byte[item.value.length - 1];
+    		System.arraycopy(item.value, 1, value, 0, item.value.length - 1);
+    		item.characteristic.setValue(value);
+    		item.characteristic.setWriteType(writeType);
+    		_bluetoothGatt.writeCharacteristic(item.characteristic);
+    		break;
+    		
+    	case MsgItem.SET_CHARACTERNOTIFICATION:
+    		boolean enabled = false;
+    		if (item.value[0] == 1)
+    			enabled = true;
+    		else
+    			enabled = false;
+    		setCharacteristicNotification(_bluetoothGatt, item.characteristic, enabled);
+    		break;
+    		
+		default:
+			break;
+    	}
+    }
+    
+    private static class MsgItem
+    {
+    	public byte value[];
+    	public int iOperation;
+    	public BluetoothGattCharacteristic characteristic;
+    	
+    	// constants
+    	public static final int ON_CONNECTED = 0;
+    	public static final int ON_DISCONNECTED = 1;
+    	public static final int ON_SERVICE_DISCOVERED = 2;
+    	public static final int ON_CHARACTERISTIC_READ = 3;
+    	public static final int ON_CHARACTERISTIC_WRITE = 4;
+    	public static final int ON_CHARACTERISTIC_CHANGED = 5;
+    	public static final int ON_DESCRIPTOR_WRITE = 6;
+    	public static final int ON_DESCRIPTOR_READ = 7;
+    	public static final int READ_CHARACTERISTIC = 8;
+    	public static final int WRITE_CHARACTERISTIC = 9;
+    	public static final int SET_CHARACTERNOTIFICATION = 10;
+    
+		public static MsgItem readItem(BluetoothGattCharacteristic characteristic)
+    	{
+    		MsgItem item = new MsgItem();
+    		item.value = null;
+    		item.iOperation = READ_CHARACTERISTIC;
+    		item.characteristic = characteristic;
+    		
+    		return item;
+    	}
+    	
+    	public static MsgItem writeItem(BluetoothGattCharacteristic characteristic, int writeType, byte[] value)
+    	{
+    		MsgItem item = new MsgItem();
+    		item.value = new byte[value.length + 1];
+    		item.value[0] = (byte)writeType;
+    		System.arraycopy(value, 0, item.value, 1, value.length);
+    		item.iOperation = WRITE_CHARACTERISTIC;
+    		item.characteristic = characteristic;
+    		
+    		return item;
+    	}
+    	
+    	public static MsgItem setNotificationItem(BluetoothGattCharacteristic characteristic, boolean enabled)
+    	{
+    		MsgItem item = new MsgItem();
+    		item.value = new byte[1];
+    		if (enabled)
+    			item.value[0] = 1;
+    		else
+    			item.value[0] = 0;
+    		item.iOperation = SET_CHARACTERNOTIFICATION;
+    		item.characteristic = characteristic;
+    		
+    		return item;
+    	}
+    	
+    	public static MsgItem onConnectItem(boolean success)
+    	{
+    		MsgItem item = new MsgItem();
+    		item.value = new byte[1];
+    		if (success)
+    			item.value[0] = 1;
+    		else
+    			item.value[0] = 0;
+    		item.iOperation = ON_CONNECTED;
+    		item.characteristic = null;
+    		
+    		return item;
+    	}
+    	
+    	public static MsgItem onDisconnectedItem()
+    	{
+    		MsgItem item = new MsgItem();
+    		item.iOperation = ON_DISCONNECTED;
+    		item.characteristic = null;
+    		
+    		return item;
+    	}
+    	
+    	public static MsgItem onServiceDiscoveredItem(boolean success)
+    	{
+    		MsgItem item = new MsgItem();
+    		item.value = new byte[1];
+    		if (success)
+    			item.value[0] = 1;
+    		else
+    			item.value[0] = 0;
+    		item.iOperation = ON_SERVICE_DISCOVERED;
+    		item.characteristic = null;
+    		
+    		return item;
+    	}
+    	
+    	public static MsgItem onCharacteristicReadItem(BluetoothGattCharacteristic characteristic, boolean success)
+    	{
+    		MsgItem item = new MsgItem();
+    		if (success)
+    		{
+    			item.value = new byte[1 + characteristic.getValue().length];
+    			item.value[0] = 1;
+    			System.arraycopy(characteristic.getValue(), 0, item.value, 1, characteristic.getValue().length);
+    		}
+    		else
+    		{
+    			item.value = new byte[1];
+    		}
+    		
+    		item.iOperation = ON_CHARACTERISTIC_READ;
+    		return item;
+    	}
+    	
+    	public static MsgItem onCharacteristicChangedItem(BluetoothGattCharacteristic characteristic, boolean success)
+    	{
+    		MsgItem item = new MsgItem();
+    		if (success)
+    		{
+    			item.value = new byte[1 + characteristic.getValue().length];
+    			item.value[0] = 1;
+    			System.arraycopy(characteristic.getValue(), 0, item.value, 1, characteristic.getValue().length);
+    		}
+    		else
+    		{
+    			item.value = new byte[1];
+    		}
+    		
+    		item.iOperation = ON_CHARACTERISTIC_CHANGED;
+    		return item;
+    	} 
+    	
+    	public static MsgItem onCharacteristicWriteItem(BluetoothGattCharacteristic characteristic, boolean success)
+    	{
+    		MsgItem item = new MsgItem();
+    		if (success)
+    		{
+    			item.value[0] = 1;
+    		}
+    		else
+    		{
+    			item.value = new byte[1];
+    		}
+    		
+    		item.iOperation = ON_CHARACTERISTIC_WRITE;
+    		return item;
+    	}
+    	
+    	public static MsgItem onDescriptorReadItem(BluetoothGattCharacteristic characteristic, boolean success)
+    	{
+    		MsgItem item = new MsgItem();
+    		if (success)
+    		{
+    			item.value[0] = 1;
+    		}
+    		else
+    		{
+    			item.value = new byte[1];
+    		}
+    		
+    		item.iOperation = ON_DESCRIPTOR_READ;
+    		return item;
+    	}
+    	
+    	public static MsgItem onDescriptorWriteItem(BluetoothGattCharacteristic characteristic, boolean success)
+    	{
+    		MsgItem item = new MsgItem();
+    		if (success)
+    		{
+    			item.value[0] = 1;
+    		}
+    		else
+    		{
+    			item.value = new byte[1];
+    		}
+    		
+    		item.iOperation = ON_DESCRIPTOR_WRITE;
+    		return item;
+    	}
     }
 }
