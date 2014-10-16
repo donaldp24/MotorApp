@@ -41,9 +41,11 @@ public class MotorControl implements SerialPortDelegate{
     public byte motorBuffer[] = new byte[16];
     public int packetFlag = 0;
     public int motoTimeOut = 0;
+    
+    private Motor _motor = new Motor();
 
     public MotorControl() {
-        //
+        main();
     }
 
     private void memset(byte[] mem, byte val, int size)
@@ -76,6 +78,13 @@ public class MotorControl implements SerialPortDelegate{
             for (int i = 0; i < _buffer.size(); i++)
                 data[i] = _buffer.get(i);
             _serialPort.write(data);
+            
+            try {
+				Thread.sleep(2000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
         }
         _buffer.clear();
     }
@@ -189,7 +198,7 @@ public class MotorControl implements SerialPortDelegate{
         packetFlag = 1;
         putch0((byte)0xAA);
         chkSum = putchc0(motor._address, chkSum);
-        chkSum = putchc0((byte)0xE6, chkSum); //command byte
+        chkSum = putchc0((byte)0xF6, chkSum); //command byte
 
         longtobyte(motor._gain[0], bytes);
         chkSum = putchc0(bytes[0], chkSum); //kp
@@ -219,6 +228,8 @@ public class MotorControl implements SerialPortDelegate{
 
         chkSum = putchc0((byte)(motor._gain[8] & 0xFF), chkSum); //deadband compensation
 
+        chkSum = putchc0 ((byte)01, chkSum); //added by me
+        
         putch0(chkSum); //CheckSum
 
         flush();
@@ -482,6 +493,10 @@ public class MotorControl implements SerialPortDelegate{
     // If a proper packet is not recieved within set limit (baudrate based), a request is sent for another one.
     // This 'should' render our delayLoop useless, and cut our waiting time into fractions.
     public void recieveStatusPacket(Motor motor) {
+    	
+    	if (true)
+    		return;
+    	
         int i; // for 'for' loop purposes
         int retries;
         int flagThing; // flag to request another status packet
@@ -573,6 +588,18 @@ public class MotorControl implements SerialPortDelegate{
             if (error == 0)
             {
                 CommonMethods.Log("SerialPort open success");
+                
+                // init motor
+                _motor._address = 0;
+                new Thread(new Runnable() {
+                	public void run()
+                	{
+                		initMotor(_motor);
+                		
+                		moveMotor(_motor, 1000000);
+                	}
+                }).start();
+                
             }
             else
             {
@@ -616,6 +643,7 @@ public class MotorControl implements SerialPortDelegate{
         {
             motorBuffer[motorBufferSize] = data[i];
             motorBufferSize++;
+            _motor._buffer[i] = data[i];
         }
 
         CommonMethods.Log("motorBufferSize : %d", motorBufferSize);
@@ -686,6 +714,7 @@ public class MotorControl implements SerialPortDelegate{
         putch0((byte)0x12);
         putch0((byte)0x1F); // 00011101
         putch0((byte)(0x31 + motor._address));
+        flush();
         recieveStatusPacket(motor);
 
         resetMotor(motor); // Set to 0

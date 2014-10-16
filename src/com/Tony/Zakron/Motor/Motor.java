@@ -13,9 +13,9 @@ public class Motor {
 
     public byte _address = 0;
     public byte _status = STATUS_OFF;
-    public long _gain[] = new long[9];
-    public long _systemVelocity = 0;
-    public long _systemAcceleration = 0;
+    public long _gain[] = {0x3E8, 0x1388, 0x32, 0xC8, 0xFF, 0x35, 0xFA0, 0x01, 00};
+    public long _systemVelocity = 1500000;
+    public long _systemAcceleration = 1000;
 
     public byte _buffer[] = new byte[16];
 }

@@ -248,7 +248,7 @@ public class SerialPort {
                                           int status) {
         	
         	CommonMethods.Log("onCharacteristicWrite ---------");
-        	/*
+        	
 
             if((characteristic == _creditsCharacteristic) || (characteristic == _fifoCharacteristic))
             {
@@ -320,7 +320,7 @@ public class SerialPort {
                         _delegate.writeComplete(SerialPort.this, -1);
                 }
             }
-            */
+            
         }
         
         @Override

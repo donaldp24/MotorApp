@@ -58,6 +58,7 @@
         android:layout_height="50px"
         android:text="Open"
         android:textSize="20px"
+        android:visibility="invisible"
         />
 
     <Button
@@ -68,6 +69,7 @@
             android:layout_height="50px"
             android:text="Init"
             android:textSize="20px"
+            android:visibility="invisible"
             />
 
     <Button
@@ -78,6 +80,7 @@
             android:layout_height="50px"
             android:text="Close"
             android:textSize="20px"
+            android:visibility="invisible"
             />
 
 </RelativeLayout>
