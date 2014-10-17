@@ -40,7 +40,7 @@ public class ControlActivity extends Activity implements ConnectionStatusChangeD
 
     private TextView lblDeviceName = null;
     private TextView lblStatus = null;
-    private EditText editAbsolutePosition = null;
+    private TextView lblAbsolutePosition = null;
     private EditText editNewPosition = null;
     
     private Button btnOpen = null;
@@ -84,8 +84,8 @@ public class ControlActivity extends Activity implements ConnectionStatusChangeD
             public void onClick(View v) {
                 if (_motorControl != null && _serialPort != null)
                 {
-                    //_motor = new Motor();
-                    //_motor._address = 0;
+                    _motor = new Motor();
+                    _motor._address = 0;
 
                     _serialPort.open();
                     btnOpen.setEnabled(false);
@@ -131,13 +131,27 @@ public class ControlActivity extends Activity implements ConnectionStatusChangeD
 				// TODO Auto-generated method stub
 				if (_motorControl != null && _serialPort != null && _motor != null)
 				{
-					long positionValue = Long.parseLong(editNewPosition.getText().toString());
-					_motorControl.moveMotor(_motor, 0x6338);
+					String value = editNewPosition.getText().toString();
+					/*
+					double inch = Double.parseDouble(value);
+					final long positionValue = _motorControl.inchToPositionValue(inch);
+					*/
+					final long positionValue = Long.parseLong(value);
+					new Thread(new Runnable () {
+						@Override
+						public void run() {
+							_motorControl.moveMotor(_motor, positionValue);
+						}
+					}).start();
 				}
 			}
 		});
         
         btnGoto.setEnabled(false);
+        
+        lblAbsolutePosition = (TextView)findViewById(R.id.lblAbsolutePosition);
+        
+        editNewPosition = (EditText)findViewById(R.id.txtNewPosition);
 
     }
 
@@ -328,13 +342,16 @@ public class ControlActivity extends Activity implements ConnectionStatusChangeD
             }
             */
             
-            btnOpen.setEnabled(true);
+            
         }
+        
 
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 setStatusWithConnectionStatus(_motorControl._serialPort._connectionState);
+                
+                	btnOpen.setEnabled(true);
             }
         });
     }
@@ -359,7 +376,10 @@ public class ControlActivity extends Activity implements ConnectionStatusChangeD
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                setStatusWithConnectionStatus(_motorControl._serialPort._connectionState);
+            	if (_motorControl == null || _motorControl._serialPort == null)
+            		setStatusWithConnectionStatus(SerialPort.STATE_DISCONNECTED);
+            	else
+            		setStatusWithConnectionStatus(_motorControl._serialPort._connectionState);
             }
         });
     }
@@ -369,31 +389,31 @@ public class ControlActivity extends Activity implements ConnectionStatusChangeD
 		// TODO Auto-generated method stub
 		if (success)
 		{
-			new Thread(new Runnable() {
-            	public void run()
-            	{
-            		//initMotor(_motor);
-            		//moveMotor(_motor, 1000000);
-            		editAbsolutePosition.setText("");            		
+			runOnUiThread(new Runnable() {
+	            @Override
+	            public void run() {
+	            	lblAbsolutePosition.setText("0");            		
             		btnInit.setEnabled(true);
-            	}
-            }).start();
+	            }
+	        });
 		}
 	}
 
 	@Override
 	public void onMotorInited(Motor motor) {
 		// TODO Auto-generated method stub
-		new Thread(new Runnable() {
-        	public void run()
-        	{
-        		//initMotor(_motor);
+		
+		runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+            	//initMotor(_motor);
         		//moveMotor(_motor, 1000000);
         		long positionValue = _motorControl.getMotoPosition(_motor);
-        		editAbsolutePosition.setText(String.format("%X", positionValue));
-        		double inch = _motorControl.positionValueToInch(positionValue);
+        		//double inch = _motorControl.positionValueToInch(positionValue);
+        		//lblAbsolutePosition.setText(String.format("%.2f", inch));
+        		lblAbsolutePosition.setText(String.format("%d", positionValue));
         		btnGoto.setEnabled(true);
-        	}
-        }).start();
+            }
+        });
 	}
 }

@@ -496,7 +496,7 @@ public class MotorControl implements SerialPortDelegate{
     // If a proper packet is not recieved within set limit (baudrate based), a request is sent for another one.
     // This 'should' render our delayLoop useless, and cut our waiting time into fractions.
     public void recieveStatusPacket(Motor motor) {
-        requestStatusPacket(motor);
+        //requestStatusPacket(motor);
     }
 
     // Returns the currently stored Motor Position
@@ -681,14 +681,14 @@ public class MotorControl implements SerialPortDelegate{
     public long inchToPositionValue(double inch)
     {
     	long ret = 0;
-    	ret = (long)(inch * 2540);
+    	ret = (long)(inch * 10152);
     	return ret;
     }
     
     public double positionValueToInch(long positionValue)
     {
     	double ret = 0;
-    	ret = ((double)positionValue) / 2540.0;
+    	ret = ((double)positionValue) / 10152.0;
     	return ret;
     }
 

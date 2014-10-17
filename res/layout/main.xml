@@ -87,25 +87,22 @@
             android:visibility="visible"
             />
     
-    <EditText
-        	android:id="@+id/txtAbsolutePosition"
-            android:layout_marginLeft="30px"
+    <TextView
+        android:id="@+id/lblAbsolutePosition"
+        android:layout_marginLeft="30px"
             android:layout_marginTop="200px"
             android:layout_width="220px"
             android:layout_height="40px"
             android:text=""
             android:textSize="20px"
-            android:inputType="numberDecimal"
-            android:hint="absolute position"
-            android:background="@android:color/white"
-            android:textColor="@android:color/black"
-         />
+        />
+  
     
     <TextView
             android:layout_marginLeft="10px"
-            android:layout_toRightOf="@id/txtAbsolutePosition"
+            android:layout_toRightOf="@id/lblAbsolutePosition"
             android:layout_marginTop="0px"
-            android:layout_alignTop="@id/txtAbsolutePosition"
+            android:layout_alignTop="@id/lblAbsolutePosition"
             android:layout_width="200px"
             android:layout_height="40px"
             android:text="ABSOLUTE POSITION"
@@ -115,14 +112,14 @@
     <EditText
         	android:id="@+id/txtNewPosition"
             android:layout_marginLeft="0px"
-            android:layout_alignLeft="@id/txtAbsolutePosition"
+            android:layout_alignLeft="@id/lblAbsolutePosition"
             android:layout_marginTop="10px"
-            android:layout_below="@id/txtAbsolutePosition"
+            android:layout_below="@id/lblAbsolutePosition"
             android:layout_width="220px"
             android:layout_height="40px"
             android:text=""
             android:textSize="20px"
-            android:inputType="numberDecimal"
+            android:inputType="text"
             android:hint="absolute position"
             android:background="@android:color/white"
             android:textColor="@android:color/black"
