@@ -43,8 +43,11 @@ public class MotorControl implements SerialPortDelegate{
     public int motoTimeOut = 0;
     
     private Motor _motor = new Motor();
+    
+    private MotorControlListener listener = null;;
 
-    public MotorControl() {
+    public MotorControl(MotorControlListener listener) {
+    	this.listener = listener;
         main();
     }
 
@@ -485,7 +488,7 @@ public class MotorControl implements SerialPortDelegate{
 
         flush();
 
-        recieveStatusPacket(motor);
+        //recieveStatusPacket(motor);
     }
 
     // A delay sequence that waits for a full and complete status packet to be
@@ -493,72 +496,7 @@ public class MotorControl implements SerialPortDelegate{
     // If a proper packet is not recieved within set limit (baudrate based), a request is sent for another one.
     // This 'should' render our delayLoop useless, and cut our waiting time into fractions.
     public void recieveStatusPacket(Motor motor) {
-    	
-    	if (true)
-    		return;
-    	
-        int i; // for 'for' loop purposes
-        int retries;
-        int flagThing; // flag to request another status packet
-        byte chkSum; // adds up checkSum for verification
-
-
-        retries = 0x00;
-        chkSum = 0x00;
-
-        while((motorBufferSize < statusPacketLength) && (retries < 10000)) // While we're still waiting for bytes
-        {
-            retries++;
-        } // while
-        //flush_uart0(); // Clear Reception Buffer
-
-        if(motorBufferSize == statusPacketLength)
-        {
-            /*** Add up checkSum ***/
-            for(i = 0; i < (statusPacketLength-1); i++)
-            {
-                chkSum += motorBuffer[i];
-            } // for
-            if(chkSum == motorBuffer[statusPacketLength - 1])
-            {
-                // VERIFIED PACKET!!!!!!!
-                motoTimeOut = 0;
-
-                /*** Load into appropriate Buffer ***/
-                for(i = 0; i < statusPacketLength; i++)
-                {
-                    motor._buffer[i] = motorBuffer[i];
-                } // for
-
-                /*** Trigger LED Off ***/
-// R.Z. 110315 disable function for 2 finger side arm system uses PB5 which is now used for 2nd finger Side Arm 2
-//				relayOffB(RELAY_COMMERROR); // edited 06-03-05 CH, changed from PB6 to PA6
-
-                return;
-            }
-            else
-            {
-                motoTimeOut++;
-                if(motoTimeOut > 5)
-                {
-                    /*** Trigger LED On ***/
-// R.Z. 110315 disable function for 2 finger side arm system uses PB5 which is now used for 2nd finger Side Arm 2
-//				relayOnB(RELAY_COMMERROR); // edited 06-03-05 CH, changed from PB6 to PA6
-                } // if
-                requestStatusPacket(motor);
-            } // if
-        }
-        else
-        {
-            motoTimeOut++;
-            if(motoTimeOut > 10)
-            {
-                /*** Trigger LED On ***/
-// R.Z. 110315 disable function for 2 finger side arm system uses PB5 which is now used for 2nd finger Side Arm 2
-//			relayOnB(RELAY_COMMERROR); // edited 06-03-05 CH, changed from PB6 to PA6
-            } // if
-            requestStatusPacket(motor);
-        } // if
+        requestStatusPacket(motor);
     }
 
     // Returns the currently stored Motor Position
@@ -591,6 +529,8 @@ public class MotorControl implements SerialPortDelegate{
                 
                 // init motor
                 _motor._address = 0;
+                
+                /*
                 new Thread(new Runnable() {
                 	public void run()
                 	{
@@ -599,11 +539,15 @@ public class MotorControl implements SerialPortDelegate{
                 		moveMotor(_motor, 1000000);
                 	}
                 }).start();
+                */
                 
+                listener.onPortOpened(true);
             }
             else
             {
                 CommonMethods.Log("SerialPort open failed");
+                
+                listener.onPortOpened(false);
             }
         }
         else if (ev == SPEvent.SP_EVT_CLOSED)
@@ -726,9 +670,26 @@ public class MotorControl implements SerialPortDelegate{
             stopMotor(motor);
             //relayOnB(RELAY_SQFINGERS);
         } // if
+        
+        
+        listener.onMotorInited(motor);
 
 
         //updateXY(1);
     } // initMotor
+    
+    public long inchToPositionValue(double inch)
+    {
+    	long ret = 0;
+    	ret = (long)(inch * 2540);
+    	return ret;
+    }
+    
+    public double positionValueToInch(long positionValue)
+    {
+    	double ret = 0;
+    	ret = ((double)positionValue) / 2540.0;
+    	return ret;
+    }
 
 }

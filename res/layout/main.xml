@@ -52,35 +52,103 @@
 
     <Button
         android:id="@+id/btnOpen"
-        android:layout_marginLeft="350px"
-        android:layout_marginTop="100px"
+        android:layout_marginLeft="50px"
+        android:layout_marginTop="120px"
         android:layout_width="120px"
         android:layout_height="50px"
         android:text="Open"
         android:textSize="20px"
-        android:visibility="invisible"
+        android:visibility="visible"
         />
 
     <Button
             android:id="@+id/btnInit"
-            android:layout_marginLeft="350px"
-            android:layout_marginTop="170px"
+            android:layout_toRightOf="@id/btnOpen"
+            android:layout_marginLeft="10px"
+            android:layout_alignTop="@id/btnOpen"
+            android:layout_marginTop="0px"
             android:layout_width="120px"
             android:layout_height="50px"
             android:text="Init"
             android:textSize="20px"
-            android:visibility="invisible"
+            android:visibility="visible"
             />
 
     <Button
             android:id="@+id/btnClose"
-            android:layout_marginLeft="350px"
-            android:layout_marginTop="250px"
+            android:layout_toRightOf="@id/btnInit"
+            android:layout_marginLeft="10px"
+            android:layout_alignTop="@id/btnOpen"
+            android:layout_marginTop="0px"
             android:layout_width="120px"
             android:layout_height="50px"
             android:text="Close"
             android:textSize="20px"
-            android:visibility="invisible"
+            android:visibility="visible"
+            />
+    
+    <EditText
+        	android:id="@+id/txtAbsolutePosition"
+            android:layout_marginLeft="30px"
+            android:layout_marginTop="200px"
+            android:layout_width="220px"
+            android:layout_height="40px"
+            android:text=""
+            android:textSize="20px"
+            android:inputType="numberDecimal"
+            android:hint="absolute position"
+            android:background="@android:color/white"
+            android:textColor="@android:color/black"
+         />
+    
+    <TextView
+            android:layout_marginLeft="10px"
+            android:layout_toRightOf="@id/txtAbsolutePosition"
+            android:layout_marginTop="0px"
+            android:layout_alignTop="@id/txtAbsolutePosition"
+            android:layout_width="200px"
+            android:layout_height="40px"
+            android:text="ABSOLUTE POSITION"
+            android:textSize="20px"
+            />
+    
+    <EditText
+        	android:id="@+id/txtNewPosition"
+            android:layout_marginLeft="0px"
+            android:layout_alignLeft="@id/txtAbsolutePosition"
+            android:layout_marginTop="10px"
+            android:layout_below="@id/txtAbsolutePosition"
+            android:layout_width="220px"
+            android:layout_height="40px"
+            android:text=""
+            android:textSize="20px"
+            android:inputType="numberDecimal"
+            android:hint="absolute position"
+            android:background="@android:color/white"
+            android:textColor="@android:color/black"
+         />
+    
+    <TextView
+            android:layout_marginLeft="10px"
+            android:layout_toRightOf="@id/txtNewPosition"
+            android:layout_marginTop="0px"
+            android:layout_alignTop="@id/txtNewPosition"
+            android:layout_width="200px"
+            android:layout_height="40px"
+            android:text="NEW POSITION"
+            android:textSize="20px"
+            />
+    
+    <Button
+            android:id="@+id/btnGo"
+            android:layout_marginLeft="140px"
+            android:layout_below="@id/txtNewPosition"
+            android:layout_marginTop="30px"
+            android:layout_width="200px"
+            android:layout_height="50px"
+            android:text="GO TO POSITION"
+            android:textSize="20px"
+            android:visibility="visible"
             />
 
 </RelativeLayout>

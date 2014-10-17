@@ -9,6 +9,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import com.Tony.Zakron.BLE.ConnectionStatusChangeDelegate;
@@ -17,6 +18,7 @@ import com.Tony.Zakron.BLE.SerialPortDelegate;
 import com.Tony.Zakron.Common.CommonMethods;
 import com.Tony.Zakron.Motor.Motor;
 import com.Tony.Zakron.Motor.MotorControl;
+import com.Tony.Zakron.Motor.MotorControlListener;
 
 import java.util.ArrayList;
 import android.bluetooth.BluetoothDevice;
@@ -28,7 +30,7 @@ import android.bluetooth.BluetoothDevice;
  * Time: 3:35 PM
  * To change this template use File | Settings | File Templates.
  */
-public class ControlActivity extends Activity implements ConnectionStatusChangeDelegate, DeviceScanListener {
+public class ControlActivity extends Activity implements ConnectionStatusChangeDelegate, DeviceScanListener, MotorControlListener {
 
     private RelativeLayout mainLayout;
     private boolean bInitialized = false;
@@ -38,7 +40,14 @@ public class ControlActivity extends Activity implements ConnectionStatusChangeD
 
     private TextView lblDeviceName = null;
     private TextView lblStatus = null;
-
+    private EditText editAbsolutePosition = null;
+    private EditText editNewPosition = null;
+    
+    private Button btnOpen = null;
+    private Button btnInit = null;
+    private Button btnClose = null;
+    private Button btnGoto = null;
+    
     private SerialPort _serialPort = null;
     private MotorControl _motorControl = null;
     private Motor _motor = null;
@@ -69,32 +78,38 @@ public class ControlActivity extends Activity implements ConnectionStatusChangeD
         lblDeviceName = (TextView)findViewById(R.id.lblDeviceName);
         lblStatus = (TextView)findViewById(R.id.lblStatus);
 
-        Button btnOpen = (Button)findViewById(R.id.btnOpen);
+        btnOpen = (Button)findViewById(R.id.btnOpen);
         btnOpen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (_motorControl != null && _serialPort != null)
                 {
-                    _motor = new Motor();
-                    _motor._address = 0;
+                    //_motor = new Motor();
+                    //_motor._address = 0;
 
                     _serialPort.open();
+                    btnOpen.setEnabled(false);
                 }
             }
         });
+        
+        btnOpen.setEnabled(false);
 
-        Button btnInit = (Button)findViewById(R.id.btnInit);
+        btnInit = (Button)findViewById(R.id.btnInit);
         btnInit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (_motorControl != null && _serialPort != null && _motor != null)
                 {
                     _motorControl.initMotor(_motor);
+                    btnInit.setEnabled(false);
                 }
             }
         });
+        
+        btnInit.setEnabled(false);
 
-        Button btnClose = (Button)findViewById(R.id.btnClose);
+        btnClose = (Button)findViewById(R.id.btnClose);
         btnClose.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -105,6 +120,24 @@ public class ControlActivity extends Activity implements ConnectionStatusChangeD
                 }
             }
         });
+        
+        btnClose.setEnabled(false);
+        
+        btnGoto = (Button)findViewById(R.id.btnGo);
+        btnGoto.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				if (_motorControl != null && _serialPort != null && _motor != null)
+				{
+					long positionValue = Long.parseLong(editNewPosition.getText().toString());
+					_motorControl.moveMotor(_motor, 0x6338);
+				}
+			}
+		});
+        
+        btnGoto.setEnabled(false);
 
     }
 
@@ -191,7 +224,7 @@ public class ControlActivity extends Activity implements ConnectionStatusChangeD
         else
         {
             // create motor control object
-            _motorControl = new MotorControl();
+            _motorControl = new MotorControl(this);
             _motorControl.main();
 
             // create new serial port
@@ -226,7 +259,7 @@ public class ControlActivity extends Activity implements ConnectionStatusChangeD
                 else
                 {
                     // create motor control object
-                    _motorControl = new MotorControl();
+                    _motorControl = new MotorControl(this);
                     _motorControl.main();
 
                     // create new serial port
@@ -245,11 +278,11 @@ public class ControlActivity extends Activity implements ConnectionStatusChangeD
     {
     	super.onResume();
     	
-    	if (_scanManager == null)
-    	{
-    		_scanManager = new DeviceScanManager(this);
-    		_scanManager.startScan();
-    	}
+    	//if (_scanManager == null)
+    	//{
+    	//	_scanManager = new DeviceScanManager(this);
+    	//	_scanManager.startScan();
+    	//}
     }
 
     private void setStatusWithConnectionStatus(int connectionStatus) {
@@ -279,18 +312,23 @@ public class ControlActivity extends Activity implements ConnectionStatusChangeD
         else
         {
             CommonMethods.Log("didConnectWithError : connect success!");
-
+            
+            
 
             if (_motorControl == null)
-                _motorControl = new MotorControl();
+                _motorControl = new MotorControl(this);
 
             _motorControl._serialPort = sp;
             sp._delegate = _motorControl;
+            _serialPort = sp;
+            /*
             if (sp.open() == false)
             {
                 CommonMethods.Log("open serial port failed");
             }
-
+            */
+            
+            btnOpen.setEnabled(true);
         }
 
         runOnUiThread(new Runnable() {
@@ -325,4 +363,37 @@ public class ControlActivity extends Activity implements ConnectionStatusChangeD
             }
         });
     }
+
+	@Override
+	public void onPortOpened(boolean success) {
+		// TODO Auto-generated method stub
+		if (success)
+		{
+			new Thread(new Runnable() {
+            	public void run()
+            	{
+            		//initMotor(_motor);
+            		//moveMotor(_motor, 1000000);
+            		editAbsolutePosition.setText("");            		
+            		btnInit.setEnabled(true);
+            	}
+            }).start();
+		}
+	}
+
+	@Override
+	public void onMotorInited(Motor motor) {
+		// TODO Auto-generated method stub
+		new Thread(new Runnable() {
+        	public void run()
+        	{
+        		//initMotor(_motor);
+        		//moveMotor(_motor, 1000000);
+        		long positionValue = _motorControl.getMotoPosition(_motor);
+        		editAbsolutePosition.setText(String.format("%X", positionValue));
+        		double inch = _motorControl.positionValueToInch(positionValue);
+        		btnGoto.setEnabled(true);
+        	}
+        }).start();
+	}
 }
