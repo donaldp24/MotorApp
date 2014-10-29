@@ -45,6 +45,11 @@ public class MotorControl implements SerialPortDelegate{
     private Motor _motor = new Motor();
     
     private MotorControlListener listener = null;;
+    
+    // last time at received status packet
+    private Long lastTimeForStatusPacket = 0L;
+    private Thread threadForStatusPacket = null;
+    private boolean closeThreadForStatusPacket = false;
 
     public MotorControl(MotorControlListener listener) {
     	this.listener = listener;
@@ -83,7 +88,7 @@ public class MotorControl implements SerialPortDelegate{
             _serialPort.write(data);
             
             try {
-				Thread.sleep(2000);
+				Thread.sleep(100);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -487,6 +492,8 @@ public class MotorControl implements SerialPortDelegate{
         putch0(chkSum);
 
         flush();
+        
+        lastTimeForStatusPacket = System.currentTimeMillis();
 
         //recieveStatusPacket(motor);
     }
@@ -496,7 +503,7 @@ public class MotorControl implements SerialPortDelegate{
     // If a proper packet is not recieved within set limit (baudrate based), a request is sent for another one.
     // This 'should' render our delayLoop useless, and cut our waiting time into fractions.
     public void recieveStatusPacket(Motor motor) {
-        //requestStatusPacket(motor);
+        requestStatusPacket(motor);
     }
 
     // Returns the currently stored Motor Position
@@ -560,6 +567,19 @@ public class MotorControl implements SerialPortDelegate{
             {
                 CommonMethods.Log("SerialPort close failed");
             }
+            
+            if (threadForStatusPacket != null)
+            {
+            	closeThreadForStatusPacket = true;
+            	try {
+					threadForStatusPacket.join();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} finally {
+					threadForStatusPacket = null;
+				}
+            }
         }
 
     }
@@ -591,6 +611,9 @@ public class MotorControl implements SerialPortDelegate{
         }
 
         CommonMethods.Log("motorBufferSize : %d", motorBufferSize);
+        
+        if (listener != null)
+        	listener.onReceivedStatusPacket(_motor);
     }
 
     public void main() {
@@ -673,6 +696,28 @@ public class MotorControl implements SerialPortDelegate{
         
         
         listener.onMotorInited(motor);
+        
+        threadForStatusPacket = new Thread( new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				while (!closeThreadForStatusPacket) {
+					long currTime = System.currentTimeMillis();
+					if (currTime - lastTimeForStatusPacket > 300)
+						requestStatusPacket(_motor);
+					
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+		});
+        
+        threadForStatusPacket.start();
 
 
         //updateXY(1);
@@ -691,5 +736,7 @@ public class MotorControl implements SerialPortDelegate{
     	ret = ((double)positionValue) / 10152.0;
     	return ret;
     }
+    
+    
 
 }

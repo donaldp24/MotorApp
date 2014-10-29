@@ -522,7 +522,7 @@ public class SerialPort {
 		            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
 		            _bluetoothGatt.writeDescriptor(descriptor);
 		            try {
-						Thread.sleep(4000);
+						Thread.sleep(400);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -535,7 +535,7 @@ public class SerialPort {
 		            _bluetoothGatt.writeDescriptor(descriptor);
 		            
 		            try {
-						Thread.sleep(4000);
+						Thread.sleep(400);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -548,7 +548,7 @@ public class SerialPort {
 		            _bluetoothGatt.writeDescriptor(descriptor);
 		            
 		            try {
-						Thread.sleep(4000);
+						Thread.sleep(400);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -560,7 +560,7 @@ public class SerialPort {
 		            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
 		            _bluetoothGatt.writeDescriptor(descriptor);
 		            try {
-						Thread.sleep(4000);
+						Thread.sleep(100);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -643,7 +643,7 @@ public class SerialPort {
 		        }
 		    	
 		    	try {
-					Thread.sleep(3000);
+					Thread.sleep(100);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

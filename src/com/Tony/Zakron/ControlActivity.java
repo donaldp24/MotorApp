@@ -416,4 +416,22 @@ public class ControlActivity extends Activity implements ConnectionStatusChangeD
             }
         });
 	}
+
+	@Override
+	public void onReceivedStatusPacket(Motor motor) {
+		// TODO Auto-generated method stub
+		runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+            	//initMotor(_motor);
+        		//moveMotor(_motor, 1000000);
+        		long positionValue = _motorControl.getMotoPosition(_motor);
+        		//double inch = _motorControl.positionValueToInch(positionValue);
+        		//lblAbsolutePosition.setText(String.format("%.2f", inch));
+        		lblAbsolutePosition.setText(String.format("%d", positionValue));
+            }
+        });
+	}
+	
+	
 }
