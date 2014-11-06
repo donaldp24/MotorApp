@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -426,8 +427,11 @@ public class ControlActivity extends Activity implements ConnectionStatusChangeD
             	//initMotor(_motor);
         		//moveMotor(_motor, 1000000);
         		long positionValue = _motorControl.getMotoPosition(_motor);
+        		int ps = (int)positionValue;
+        		positionValue = (ps & 0xFFFFFFFF);
         		//double inch = _motorControl.positionValueToInch(positionValue);
         		//lblAbsolutePosition.setText(String.format("%.2f", inch));
+        		Log.v("motorapp", String.format("positionvalue : %d", positionValue));
         		lblAbsolutePosition.setText(String.format("%d", positionValue));
             }
         });

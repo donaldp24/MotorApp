@@ -83,8 +83,12 @@ public class MotorControl implements SerialPortDelegate{
         if (_serialPort != null)
         {
             byte data[] = new byte[_buffer.size()];
-            for (int i = 0; i < _buffer.size(); i++)
+            String s = "";
+            for (int i = 0; i < _buffer.size(); i++) {
                 data[i] = _buffer.get(i);
+                s = String.format("%s %02X", s, (int)data[i]);
+            }
+            Log.v("ControlApp", String.format("writing data : %s", s));
             _serialPort.write(data);
             
             try {
@@ -482,16 +486,33 @@ public class MotorControl implements SerialPortDelegate{
     }
 
     // Ask for and recieve a status packet
-    public void requestStatusPacket(Motor motor) {
+    synchronized public void requestStatusPacket(Motor motor) {
         byte chkSum;
         chkSum = 0x00;
-
+/*
         putch0((byte)0xAA);
         chkSum = putchc0(motor._address, chkSum);
         chkSum = putchc0((byte)0x0E, chkSum);    // R.Z. 110107  This is the new NOP  was  0x0d
         putch0(chkSum);
-
+        */
+        
+        
+        putch0((byte)0xAA);
+        chkSum = putchc0(motor._address, chkSum);
+        chkSum = putchc0((byte)0x13, chkSum);
+        chkSum = putchc0((byte)0x01, chkSum);
+        putch0(chkSum);
+        
+        /*
+        putch0((byte)0xAA);
+        chkSum = putchc0(motor._address, chkSum);
+        chkSum = putchc0((byte)0x10, chkSum);
+        chkSum = putchc0((byte)0x31, chkSum);
+        putch0(chkSum);
+        */
+        
         flush();
+        
         
         lastTimeForStatusPacket = System.currentTimeMillis();
 
@@ -607,7 +628,12 @@ public class MotorControl implements SerialPortDelegate{
         {
             motorBuffer[motorBufferSize] = data[i];
             motorBufferSize++;
-            _motor._buffer[i] = data[i];
+        }
+        
+        if (data.length == 14 || data.length == 6)
+        {
+        	for (int i = 0; i < data.length; i++)
+        		_motor._buffer[i] = data[i];
         }
 
         CommonMethods.Log("motorBufferSize : %d", motorBufferSize);
@@ -694,7 +720,7 @@ public class MotorControl implements SerialPortDelegate{
             //relayOnB(RELAY_SQFINGERS);
         } // if
         
-        
+        _motor = motor;
         listener.onMotorInited(motor);
         
         threadForStatusPacket = new Thread( new Runnable() {
