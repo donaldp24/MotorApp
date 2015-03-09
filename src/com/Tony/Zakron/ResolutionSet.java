@@ -21,8 +21,8 @@ public class ResolutionSet {
 	public static float _fPro = 1;
 
     // designed width & height for landscape mode
-	public static int _nDesignWidth = 800;
-	public static int _nDesignHeight = 480;
+	public static int _nDesignWidth = 480;
+	public static int _nDesignHeight = 800;
 
 	public static ResolutionSet _instance = new ResolutionSet();
 
@@ -32,11 +32,11 @@ public class ResolutionSet {
 
 	public void setResolution(int x, int y, boolean isPortrate)
 	{
-        if (!isPortrate)
+        if (isPortrate)
 		    _fXpro = (float)x / _nDesignWidth;
         else
             _fXpro = (float)x / _nDesignHeight;
-        if (!isPortrate)
+        if (isPortrate)
 		    _fYpro = (float)y / _nDesignHeight;
         else
             _fYpro = (float)y / _nDesignWidth;

@@ -71,14 +71,14 @@ public class CommonMethods {
 
     public static void showAlertMessage(Context ctx, String msg)
     {
-        Toast newToast = Toast.makeText(ctx, msg, Toast.LENGTH_SHORT);
+        Toast newToast = Toast.makeText(ctx, msg, Toast.LENGTH_LONG);
         newToast.setGravity(Gravity.CENTER, 0, 0);
         newToast.show();
     }
 
     public static void showAlertMessage(Context ctx, int msgid)
     {
-        Toast newToast = Toast.makeText(ctx, msgid, Toast.LENGTH_SHORT);
+        Toast newToast = Toast.makeText(ctx, msgid, Toast.LENGTH_LONG);
         newToast.setGravity(Gravity.CENTER, 0, -50);
         newToast.show();
     }

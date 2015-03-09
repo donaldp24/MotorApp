@@ -1,4 +1,6 @@
-package com.Tony.Zakron.BLE;
+package com.Tony.Zakron.ble;
+
+import com.Tony.Zakron.ConnectBlue.SerialPort;
 
 /**
  * Created with IntelliJ IDEA.

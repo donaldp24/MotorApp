@@ -1,4 +1,4 @@
-package com.Tony.Zakron.BLE;
+package com.Tony.Zakron.helper;
 
 /**
  * Created by xiaoxue on 8/20/14.

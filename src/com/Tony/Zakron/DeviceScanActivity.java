@@ -16,6 +16,12 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.Tony.Zakron.Common.AppContext;
+import com.Tony.Zakron.ConnectBlue.SerialPort;
+import com.Tony.Zakron.ble.BleManager;
+import com.Tony.Zakron.ble.BlePeripheral;
+import com.Tony.Zakron.ble.BleScanner;
+import com.Tony.Zakron.event.EventManager;
+import com.Tony.Zakron.event.SEvent;
 
 import java.util.ArrayList;
 
@@ -26,20 +32,81 @@ import java.util.ArrayList;
  * Time: 3:56 PM
  * To change this template use File | Settings | File Templates.
  */
+
 public class DeviceScanActivity extends ListActivity {
     private LeDeviceListAdapter mLeDeviceListAdapter;
     private boolean mScanning;
-    private Handler mHandler;
 
-    private static final int REQUEST_ENABLE_BT = 1;
     // Stops scanning after 10 seconds.
     private static final long SCAN_PERIOD = 15000;
+    private Handler mHandler;
+    private Runnable mRunnable;
+    private boolean scanUpdated;
+    private Handler mStopHandler;
+    private Runnable mStopRunnable;
+    private BlePeripheral _selectedPeripheral;
+    private SerialPort _serialPort;
+    private Object _dlg;
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        mLeDeviceListAdapter = new LeDeviceListAdapter();
+        setListAdapter(mLeDeviceListAdapter);
+
         getActionBar().setTitle(R.string.title_devices);
-        mHandler = new Handler();
+        mHandler = new Handler(this.getMainLooper());
+        mStopHandler = new Handler(this.getMainLooper());
+
+        startScan();
+
+    }
+
+    protected void startScan() {
+        scanUpdated = false;
+        mRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (scanUpdated && !BleScanner.sharedInstance().isStopped()) {
+                    ArrayList<BlePeripheral> scannedPeripherals = BleManager.sharedInstance().getScannedPeripherals();
+                    mLeDeviceListAdapter.replaceWith(scannedPeripherals);
+                    scanUpdated = false;
+
+                    int nCount = scannedPeripherals.size();
+                    String subtitle = String.format("%d device(s) scanned", nCount);
+                    getActionBar().setSubtitle(subtitle);
+                }
+                if (!BleScanner.sharedInstance().isStopped()) {
+                    mHandler.postDelayed(mRunnable, 1000);
+                }
+            }
+        };
+
+        mHandler.postDelayed(mRunnable, 1000);
+
+        mScanning = BleManager.sharedInstance().scanForPeripheralsWithServices(null, true);
+
+        mStopRunnable = new Runnable() {
+            @Override
+            public void run() {
+                stopScan();
+            }
+        };
+
+        mStopHandler.postDelayed(mStopRunnable, SCAN_PERIOD);
+
+        invalidateOptionsMenu();
+    }
+
+    protected void stopScan() {
+        scanUpdated = false;
+        mHandler.removeCallbacks(mRunnable);
+        mStopHandler.removeCallbacks(mStopRunnable);
+
+        mScanning = false;
+        BleManager.sharedInstance().stopScan();
+
+        invalidateOptionsMenu();
     }
 
     @Override
@@ -63,59 +130,51 @@ public class DeviceScanActivity extends ListActivity {
         switch (item.getItemId()) {
             case R.id.menu_scan:
                 mLeDeviceListAdapter.clear();
-                scanLeDevice(true);
+                startScan();
                 break;
             case R.id.menu_stop:
-                scanLeDevice(false);
+                stopScan();
                 break;
         }
+        invalidateOptionsMenu();
         return true;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
-        // Ensures Bluetooth is enabled on the device.  If Bluetooth is not currently enabled,
-        // fire an intent to display a dialog asking the user to grant permission to enable it.
-        if (AppContext._bluetoothAdapter == null)
-        	return;
-        
-        if (!AppContext._bluetoothAdapter.isEnabled()) {
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-        }
-
-        // Initializes list view adapter.
-        mLeDeviceListAdapter = new LeDeviceListAdapter();
-        setListAdapter(mLeDeviceListAdapter);
-        scanLeDevice(true);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        // User chose not to enable Bluetooth.
-        if (requestCode == REQUEST_ENABLE_BT && resultCode == Activity.RESULT_CANCELED) {
-            finish();
-            return;
-        }
-        super.onActivityResult(requestCode, resultCode, data);
+        EventManager.sharedInstance().register(this);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        scanLeDevice(false);
+        EventManager.sharedInstance().unregister(this);
+        stopScan();
         mLeDeviceListAdapter.clear();
     }
 
     @Override
     protected void onListItemClick(ListView l, View v, int position, long id) {
+        stopScan();
 
-        final BluetoothDevice device = mLeDeviceListAdapter.getDevice(position);
-        if (device == null)
+        final BlePeripheral peripheral = mLeDeviceListAdapter.getDevice(position);
+        if (peripheral == null)
             return;
 
+        _selectedPeripheral = peripheral;
+
+        // create serialport
+        _serialPort = new SerialPort(_selectedPeripheral);
+        boolean ret = _serialPort.open();
+        if (ret == false) {
+            UIManager.sharedInstance().showToastMessage(this, "connecting failed");
+            return;
+        }
+
+        _dlg = UIManager.sharedInstance().showProgressDialog(this, null, "connecting...", true);
+
+        /*
         final Intent intent = new Intent(this, ControlActivity.class);
         intent.putExtra(ControlActivity.EXTRAS_DEVICE_NAME, device.getName());
         intent.putExtra(ControlActivity.EXTRAS_DEVICE_ADDRESS, device.getAddress());
@@ -127,65 +186,75 @@ public class DeviceScanActivity extends ListActivity {
 
         setResult(Activity.RESULT_OK, intent);
         finish();
+        */
     }
 
-    private void scanLeDevice(final boolean enable) {
-        if (enable) {
-            // Stops scanning after a pre-defined scan period.
-
-            mHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    mScanning = false;
-                    AppContext._bluetoothAdapter.stopLeScan(mLeScanCallback);
-                    invalidateOptionsMenu();
-                }
-            }, SCAN_PERIOD);
-
-
-            mScanning = true;
-            AppContext._bluetoothAdapter.startLeScan(mLeScanCallback);
-        } else {
-            mScanning = false;
-            AppContext._bluetoothAdapter.stopLeScan(mLeScanCallback);
+    public void onEventMainThread(SEvent e) {
+        if (EventManager.isEvent(e, BleManager.kBLEManagerDiscoveredPeripheralNotification)) {
+            scanUpdated = true;
         }
-        invalidateOptionsMenu();
+        else if (EventManager.isEvent(e, SerialPort.kSerialPortConnectedNotification)) {
+            if (_serialPort == e.object) {
+                if (_dlg != null) {
+                    UIManager.sharedInstance().dismissProgressDialog(_dlg);
+                    _dlg = null;
+                }
+
+                UIManager.sharedInstance().showToastMessage(this, "Opened successfully");
+                // show maint menu activity
+
+                MotorApplication application = (MotorApplication)getApplication();
+                application.setSerialPort(_serialPort);
+
+                // start main menu activity
+                Intent intent = new Intent(this, MainActivity.class);
+                startActivity(intent);
+                finish();
+            }
+        }
+        else if (EventManager.isEvent(e, SerialPort.kSerialPortDisconnectedNotification)) {
+            if (_serialPort == e.object) {
+                if (_dlg != null) {
+                    UIManager.sharedInstance().dismissProgressDialog(_dlg);
+                    _dlg = null;
+                }
+                UIManager.sharedInstance().showToastMessage(this, "Failed to open serial port");
+            }
+        }
     }
 
     // Adapter for holding devices found through scanning.
     private class LeDeviceListAdapter extends BaseAdapter {
-        private ArrayList<BluetoothDevice> mLeDevices;
+        private ArrayList<BlePeripheral> mPeripherals;
         private LayoutInflater mInflator;
-        private byte[] packetBytes;
 
         public LeDeviceListAdapter() {
             super();
-            mLeDevices = new ArrayList<BluetoothDevice>();
+            mPeripherals = new ArrayList<BlePeripheral>();
             mInflator = DeviceScanActivity.this.getLayoutInflater();
         }
 
-        public void addDevice(BluetoothDevice device) {
-            if(!mLeDevices.contains(device)) {
-                mLeDevices.add(device);
-            }
+        public void replaceWith(ArrayList<BlePeripheral> devices) {
+            mPeripherals = devices;
+            notifyDataSetChanged();
         }
 
-        public BluetoothDevice getDevice(int position) {
-            return mLeDevices.get(position);
+        public BlePeripheral getDevice(int position) {
+            return mPeripherals.get(position);
         }
 
         public void clear() {
-            mLeDevices.clear();
+            mPeripherals.clear();
         }
 
         @Override
         public int getCount() {
-            return mLeDevices.size();
+            return mPeripherals.size();
         }
 
         @Override
         public Object getItem(int i) {
-            return mLeDevices.get(i);
+            return mPeripherals.get(i);
         }
 
         @Override
@@ -204,67 +273,49 @@ public class DeviceScanActivity extends ListActivity {
                 viewHolder = new ViewHolder();
                 viewHolder.deviceAddress = (TextView) view.findViewById(R.id.device_address);
                 viewHolder.deviceName = (TextView) view.findViewById(R.id.device_name);
+                viewHolder.deviceRssi = (TextView) view.findViewById(R.id.device_rssi);
                 view.setTag(viewHolder);
             } else {
                 viewHolder = (ViewHolder) view.getTag();
             }
 
-            BluetoothDevice device = mLeDevices.get(i);
-            final String deviceName = device.getName();
+            BlePeripheral peripheral = mPeripherals.get(i);
+            final String deviceName = peripheral.name();
             if (deviceName != null && deviceName.length() > 0)
                 viewHolder.deviceName.setText(deviceName);
             else
                 viewHolder.deviceName.setText(R.string.unknown_device);
-            viewHolder.deviceAddress.setText(device.getAddress());
+            viewHolder.deviceAddress.setText(peripheral.address());
 
-            StringBuilder sbData = new StringBuilder();
-            sbData.append('{');
-            int t;
-
-            for(i=0; i < packetBytes.length; i++)
-            {
-                t = (int)(packetBytes[i] & 0xFF);
-                sbData.append ( String.format("%02X", t));
-                if(i < packetBytes.length - 1)
-                    sbData.append(' ');
+            byte[] scanRecord = peripheral.scanRecord();
+            if (scanRecord != null) {
+                StringBuilder sbData = new StringBuilder();
+                sbData.append('{');
+                int t;
+                for (i = 0; i < scanRecord.length; i++) {
+                    t = (int) (scanRecord[i] & 0xFF);
+                    sbData.append(String.format("%02X", t));
+                    if (i < scanRecord.length - 1)
+                        sbData.append(' ');
+                }
+                sbData.append('}');
+                viewHolder.deviceAddress.setText(sbData);
             }
-            sbData.append('}');
-            viewHolder.deviceAddress.setText(sbData);
+            else {
+                viewHolder.deviceAddress.setText("");
+            }
+
+            int rssi = peripheral.rssi();
+            String strRssi = String.format("%d", rssi);
+            viewHolder.deviceRssi.setText(strRssi);
 
             return view;
         }
-
-        public byte[] getPacketBytes() {
-            return packetBytes;
-        }
-
-        public void setPacketBytes(byte[] packetBytes) {
-            this.packetBytes = packetBytes;
-        }
     }
-
-    // Device scan callback.
-    private BluetoothAdapter.LeScanCallback mLeScanCallback =
-            new BluetoothAdapter.LeScanCallback() {
-
-                @Override
-                public void onLeScan(final BluetoothDevice device, int rssi, final byte[] scanRecord) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            byte[] data;
-                            //	for(int c = 0; c < scanRecord.length; c++)
-                            //		data[c] = scanRecord[c];
-                            mLeDeviceListAdapter.addDevice(device);
-                            mLeDeviceListAdapter.notifyDataSetChanged();
-                            mLeDeviceListAdapter.setPacketBytes(scanRecord);
-                        }
-                    });
-                }
-            };
 
     static class ViewHolder {
         TextView deviceName;
         TextView deviceAddress;
+        TextView deviceRssi;
     }
 }

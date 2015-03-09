@@ -13,17 +13,15 @@ import android.view.ViewTreeObserver;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 import com.Tony.Zakron.Common.AppContext;
+import com.Tony.Zakron.ble.BleManager;
+import com.Tony.Zakron.event.EventManager;
+import com.crashlytics.android.Crashlytics;
 
 public class SplashScreen extends Activity {
 
-    private RelativeLayout mainLayout;
-    private boolean bInitialized = false;
-
-    private BluetoothAdapter mBluetoothAdapter = null;
     private static final int REQUEST_ENABLE_BT = 1;
-
-
     private Handler handler;
+    private boolean isBleEnabled;
     public final int LOADINGVIEW_TIMEOUT = 3000;
 
     /**
@@ -32,90 +30,85 @@ public class SplashScreen extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Crashlytics.start(this);
         setContentView(R.layout.splash);
 
-        AppContext._mainContext = getApplicationContext();
+        initVariables();
+        setupControls();
+        checkBluetooth();
+    }
 
-        // Initialize Global
-        AppContext.initialize(this);
-
-        // Initializes a Bluetooth adapter.  For API level 18 and above, get a reference to
-        // BluetoothAdapter through BluetoothManager.
-        final BluetoothManager bluetoothManager =
-                (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        mBluetoothAdapter = bluetoothManager.getAdapter();
-
-        // Checks if Bluetooth is supported on the device.
-        if (mBluetoothAdapter == null) {
-            Toast.makeText(this, R.string.error_bluetooth_not_supported, Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
-        AppContext._bluetoothAdapter = mBluetoothAdapter;
-
-        mainLayout = (RelativeLayout)findViewById(R.id.RLSplashRoot);
-        mainLayout.getViewTreeObserver().addOnGlobalLayoutListener(
-                new ViewTreeObserver.OnGlobalLayoutListener() {
-                    public void onGlobalLayout() {
-                        if (bInitialized == false)
-                        {
-                            Rect r = new Rect();
-                            mainLayout.getLocalVisibleRect(r);
-                            ResolutionSet._instance.setResolution(r.width(), r.height(), true);
-                            ResolutionSet._instance.iterateChild(findViewById(R.id.RLSplashRoot));
-                            bInitialized = true;
-                        }
-                    }
-                }
-        );
-
-        //manager = ScanManager.managerWithListner(this, ScanManagerListenerInstance.sharedInstance());
-        // have to be commented
-        // manager.startScan();
-
+    protected void initVariables() {
         handler = new Handler()
         {
             @Override
             public void handleMessage(Message msg)
             {
-                if (msg.what == 0)
-                {
-                    startActivity(new Intent(SplashScreen.this, ControlActivity.class));
-                    overridePendingTransition(R.anim.fade, R.anim.alpha);
-                    finish();
+                if (msg.what == 0) {
+                    goNext();
                 }
             }
         };
     }
 
-    @Override
-    protected void onResume()
-    {
-        super.onResume();
+    protected void setupControls() {
+    }
 
-        // Ensures Bluetooth is enabled on the device.  If Bluetooth is not currently enabled,
-        // fire an intent to display a dialog asking the user to grant permission to enable it.
-        if (!mBluetoothAdapter.isEnabled()) {
+    protected void checkBluetooth() {
+        isBleEnabled = false;
+
+        BleManager.initialize(getApplicationContext(), ((MotorApplication) getApplication()).getBluetoothCrashResolver());
+        if (!BleManager.sharedInstance().isBleSupported()) {
+            Toast.makeText(this, R.string.ble_not_supported, Toast.LENGTH_SHORT).show();
+            finish();
+        }
+
+        if (!BleManager.sharedInstance().isBleAvailable()) {
+            Toast.makeText(this, R.string.error_bluetooth_not_supported, Toast.LENGTH_SHORT).show();
+            finish();
+        }
+
+        isBleEnabled = BleManager.sharedInstance().isBleEnabled();
+
+        if (isBleEnabled) {
+            handler.sendEmptyMessageDelayed(0, LOADINGVIEW_TIMEOUT);
+        }
+    }
+
+    protected void goNext() {
+        UIManager.initialize(getApplicationContext());
+        EventManager.initalize(getApplicationContext());
+        AppContext.initialize(getApplicationContext());
+
+        // scan bluetooth
+        // BleManager.sharedInstance().scanForPeripheralsWithServices(null, true);
+
+        Intent intent = new Intent(this, DeviceScanActivity.class);
+        intent.putExtra("from", this.getClass().getName());
+        startActivity(intent);
+        finish();
+        overridePendingTransition(R.anim.fade, R.anim.alpha);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        if (!isBleEnabled) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-        }
-        else
-        {
-            handler.sendEmptyMessageDelayed(0, LOADINGVIEW_TIMEOUT);
         }
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        // User chose not to enable Bluetooth.
         if (requestCode == REQUEST_ENABLE_BT) {
-            if (resultCode == Activity.RESULT_CANCELED)
-            {
+            if (resultCode == Activity.RESULT_CANCELED) {
                 finish();
                 return;
             }
-            else
-            {
+            else if (resultCode == Activity.RESULT_OK) {
+                isBleEnabled = BleManager.sharedInstance().isBleEnabled();
                 handler.sendEmptyMessageDelayed(0, LOADINGVIEW_TIMEOUT);
             }
         }

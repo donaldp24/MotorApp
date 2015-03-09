@@ -8,12 +8,21 @@
         android:minSdkVersion="18"
         android:targetSdkVersion="18" />
 
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <uses-permission android:name="android.permission.READ_LOGS" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.GET_TASKS" />
+
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
 
-    <application android:label="@string/app_name" android:icon="@drawable/ic_launcher">
+    <application android:label="@string/app_name"
+                 android:name=".MotorApplication"
+                 android:icon="@drawable/ic_launcher">
         <activity android:name="SplashScreen"
                   android:label="@string/app_name"
                   android:screenOrientation="portrait"
@@ -25,15 +34,26 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".ControlActivity"
-                  android:label="@string/app_name"
-                  android:screenOrientation="portrait"
-                />
 
         <activity android:name=".DeviceScanActivity"
                   android:label="@string/app_name"
                   android:screenOrientation="portrait"
                 />
+
+        <activity android:name=".MainActivity"
+                  android:screenOrientation="portrait"
+                />
+        <activity android:name=".BaseActivity"/>
+
+        <receiver
+                android:name=".ble.BluetoothAdapterListener"
+                android:exported="false" >
+            <intent-filter>
+                <action android:name="android.bluetooth.adapter.action.STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+        <meta-data android:name="com.crashlytics.ApiKey" android:value="fb62bd4bbf7439df7bc68c2f06bc8b2bfbb19f5e"/>
+
     </application>
 
 </manifest>

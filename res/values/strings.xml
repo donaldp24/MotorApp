@@ -27,4 +27,14 @@
     <string name="menu_scan">Scan</string>
     <string name="menu_stop">Stop</string>
     <string name="menu_select">Select</string>
+
+    <!-- control menu-->
+    <string name="title_mainmenu">MAIN MENU</string>
+
+    <string name="title_bluetooth">BLUETOOTH</string>
+    <string name="title_calibrate">CALIBRATE</string>
+    <string name="title_program">PROGRAM</string>
+    <string name="title_settings">SETTINGS</string>
+
+
 </resources>

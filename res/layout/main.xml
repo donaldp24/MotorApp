@@ -1,152 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                android:id="@+id/RLMain"
+                android:id="@+id/layout_parent"
               android:orientation="vertical"
-              android:layout_width="fill_parent"
-              android:layout_height="fill_parent"
+              android:layout_width="480px"
+              android:layout_height="800px"
         >
-    <TextView
-            android:id="@+id/lblDeviceLabel"
-            android:layout_marginLeft="20px"
+    <ImageView
             android:layout_marginTop="20px"
-            android:layout_width="200px"
-            android:layout_height="50px"
-            android:text="connectBlue : "
-            android:textSize="30px"
-            />
-    <TextView
-            android:id="@+id/lblDeviceName"
-        android:layout_marginLeft="0px"
-        android:layout_toRightOf="@+id/lblDeviceLabel"
-        android:layout_marginTop="0px"
-        android:layout_alignTop="@+id/lblDeviceLabel"
-        android:layout_width="280px"
-        android:layout_height="50px"
-        android:text="(NONE)"
-        android:textSize="30px"
-        />
-
-    <TextView
-        android:id="@+id/lblStatusLabel"
-        android:layout_marginLeft="0px"
-        android:layout_alignLeft="@+id/lblDeviceLabel"
-        android:layout_marginTop="0px"
-        android:layout_below="@+id/lblDeviceLabel"
-        android:layout_width="100px"
-        android:layout_height="50px"
-        android:text="Status"
-        android:textSize="20px"
-        />
-
-    <TextView
-            android:id="@+id/lblStatus"
-            android:layout_marginLeft="0px"
-            android:layout_toRightOf="@+id/lblStatusLabel"
-            android:layout_marginTop="0px"
-            android:layout_alignTop="@+id/lblStatusLabel"
-            android:layout_width="200px"
-            android:layout_height="50px"
-            android:text="(NONE)"
-            android:textSize="20px"
-            />
-
-    <Button
-        android:id="@+id/btnOpen"
-        android:layout_marginLeft="50px"
-        android:layout_marginTop="120px"
-        android:layout_width="120px"
-        android:layout_height="50px"
-        android:text="Open"
-        android:textSize="20px"
-        android:visibility="visible"
-        />
-
-    <Button
-            android:id="@+id/btnInit"
-            android:layout_toRightOf="@id/btnOpen"
-            android:layout_marginLeft="10px"
-            android:layout_alignTop="@id/btnOpen"
-            android:layout_marginTop="0px"
             android:layout_width="120px"
-            android:layout_height="50px"
-            android:text="Init"
-            android:textSize="20px"
-            android:visibility="visible"
+               android:layout_height="145px"
+               android:layout_centerHorizontal="true"
+               android:background="@drawable/logo_red"
+               android:id="@+id/ivMark"
             />
 
-    <Button
-            android:id="@+id/btnClose"
-            android:layout_toRightOf="@id/btnInit"
-            android:layout_marginLeft="10px"
-            android:layout_alignTop="@id/btnOpen"
-            android:layout_marginTop="0px"
-            android:layout_width="120px"
-            android:layout_height="50px"
-            android:text="Close"
-            android:textSize="20px"
-            android:visibility="visible"
-            />
-    
-    <TextView
-        android:id="@+id/lblAbsolutePosition"
-        android:layout_marginLeft="30px"
-            android:layout_marginTop="200px"
-            android:layout_width="220px"
-            android:layout_height="40px"
-            android:text=""
-            android:textSize="20px"
-        />
-  
-    
-    <TextView
-            android:layout_marginLeft="10px"
-            android:layout_toRightOf="@id/lblAbsolutePosition"
-            android:layout_marginTop="0px"
-            android:layout_alignTop="@id/lblAbsolutePosition"
-            android:layout_width="200px"
-            android:layout_height="40px"
-            android:text="ABSOLUTE POSITION"
-            android:textSize="20px"
-            />
-    
-    <EditText
-        	android:id="@+id/txtNewPosition"
-            android:layout_marginLeft="0px"
-            android:layout_alignLeft="@id/lblAbsolutePosition"
-            android:layout_marginTop="10px"
-            android:layout_below="@id/lblAbsolutePosition"
-            android:layout_width="220px"
-            android:layout_height="40px"
-            android:text=""
-            android:textSize="20px"
-            android:inputType="number"
-            android:hint="absolute position"
-            android:background="@android:color/white"
-            android:textColor="@android:color/black"
-         />
-    
-    <TextView
-            android:layout_marginLeft="10px"
-            android:layout_toRightOf="@id/txtNewPosition"
-            android:layout_marginTop="0px"
-            android:layout_alignTop="@id/txtNewPosition"
-            android:layout_width="200px"
-            android:layout_height="40px"
-            android:text="NEW POSITION"
-            android:textSize="20px"
-            />
-    
-    <Button
-            android:id="@+id/btnGo"
-            android:layout_marginLeft="140px"
-            android:layout_below="@id/txtNewPosition"
-            android:layout_marginTop="30px"
-            android:layout_width="200px"
-            android:layout_height="50px"
-            android:text="GO TO POSITION"
-            android:textSize="20px"
-            android:visibility="visible"
-            />
+    <LinearLayout
+            android:layout_below="@+id/ivMark"
+            android:layout_marginTop="20px"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            >
+        <LinearLayout
+                android:id="@+id/llBluetooth"
+                android:layout_marginTop="20px"
+                android:layout_width="match_parent"
+                android:layout_height="40px"
+                android:orientation="horizontal"
+                android:background="#303030"
+                android:gravity="center"
+                >
+            <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/title_bluetooth"
+                    />
+        </LinearLayout>
 
+        <LinearLayout
+                android:id="@+id/llCalibrate"
+                android:layout_marginTop="20px"
+                android:layout_width="match_parent"
+                android:layout_height="40px"
+                android:orientation="horizontal"
+                android:background="#303030"
+                android:gravity="center"
+                >
+            <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/title_calibrate"
+                    />
+        </LinearLayout>
+
+        <LinearLayout
+                android:id="@+id/llProgram"
+                android:layout_marginTop="20px"
+                android:layout_width="match_parent"
+                android:layout_height="40px"
+                android:orientation="horizontal"
+                android:background="#303030"
+                android:gravity="center"
+                >
+            <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/title_program"
+                    />
+        </LinearLayout>
+
+        <LinearLayout
+                android:id="@+id/llSettings"
+                android:layout_marginTop="20px"
+                android:layout_width="match_parent"
+                android:layout_height="40px"
+                android:orientation="horizontal"
+                android:background="#303030"
+                android:gravity="center"
+                >
+            <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/title_settings"
+                    />
+        </LinearLayout>
+    </LinearLayout>
 </RelativeLayout>
 
