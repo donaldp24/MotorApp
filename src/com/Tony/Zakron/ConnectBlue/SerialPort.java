@@ -126,6 +126,8 @@ public class SerialPort {
     }
 
     protected int _getSerialPortVersion() {
+        return SP_CURRENT_SERIAL_PORT_VERSION;
+        /*
    	
         int version = 0;
 
@@ -173,6 +175,7 @@ public class SerialPort {
             }
         }
         return version;
+        */
     }
 
     public void _openSerialPortService() {
@@ -198,6 +201,9 @@ public class SerialPort {
 
         if (characteristics.size() > 0) {
             _fifoCharacteristic = _service.getCharacteristic(CommonMethods.toUUID(serialPortFifoCharactUuid));
+            if (_fifoCharacteristic == null) {
+                CommonMethods.Log("_discoverCharacteristics - fifoCharacteristic is null");
+            }
         }
 
         // discover for deviceIdService
@@ -205,14 +211,23 @@ public class SerialPort {
         CommonMethods.Log("_discoverCharacteristics - deviceIdService - characteristics count : %d", characteristics.size());
         if (characteristics.size() > 0) {
             _modelNumberCharacteristic = _deviceIdService.getCharacteristic(CommonMethods.toUUID(modelNumberCharactUuid[0], modelNumberCharactUuid[1]));
+            if (_modelNumberCharacteristic == null) {
+                CommonMethods.Log("_discoverCharacteristics - _modelNumberCharacteristic is null");
+            }
             _fwVersionCharacteristic = _deviceIdService.getCharacteristic(CommonMethods.toUUID(firmwareRevisionCharactUuid[0], firmwareRevisionCharactUuid[1]));
+            if (_fwVersionCharacteristic == null) {
+                CommonMethods.Log("_discoverCharacteristics -_fwVersionCharacteristic is null");
+            }
+        }
+        else {
+            CommonMethods.Log("_discoverCharacteristics - there is no characteristics on _deviceIdService");
         }
 
         if ((_fifoCharacteristic != null) &&
-                (_modelNumberCharacteristic != null) &&
-                (_modelNumberCharacteristic.getValue() != null) &&
-                (_fwVersionCharacteristic != null) &&
-                (_fwVersionCharacteristic.getValue() != null)) {
+                (_modelNumberCharacteristic != null) /*&&
+                (_modelNumberCharacteristic.getValue() != null) */ &&
+                (_fwVersionCharacteristic != null)/* &&
+                (_fwVersionCharacteristic.getValue() != null)*/) {
             CommonMethods.Log("_discoverCharacteristics calling _openSerialPortService()");
             _openSerialPortService();
         }
