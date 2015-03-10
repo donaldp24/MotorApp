@@ -33,21 +33,21 @@ public class BaseActivity extends Activity {
         if (USE_RESOLUTIONSET) {
             if (USE_GLOBALLISTENER) {
                 mainLayout.getViewTreeObserver().addOnGlobalLayoutListener(
-                        new ViewTreeObserver.OnGlobalLayoutListener() {
-                            public void onGlobalLayout() {
-                                if (bInitialized == false) {
-                                    int curOrientation = getResources().getConfiguration().orientation;
+                    new ViewTreeObserver.OnGlobalLayoutListener() {
+                        public void onGlobalLayout() {
+                            if (bInitialized == false) {
+                                int curOrientation = getResources().getConfiguration().orientation;
 
-                                    Rect r = new Rect();
-                                    mainLayout.getLocalVisibleRect(r);
-                                    ResolutionSet._instance.setResolution(r.width(), r.height(), true);
-                                    ResolutionSet._instance.iterateChild(mainLayout);
-                                    bInitialized = true;
+                                Rect r = new Rect();
+                                mainLayout.getLocalVisibleRect(r);
+                                ResolutionSet._instance.setResolution(r.width(), r.height(), true);
+                                ResolutionSet._instance.iterateChild(mainLayout);
+                                bInitialized = true;
 
-                                    changedLayoutOrientation(curOrientation);
-                                }
+                                changedLayoutOrientation(curOrientation);
                             }
                         }
+                    }
                 );
             }
             else {

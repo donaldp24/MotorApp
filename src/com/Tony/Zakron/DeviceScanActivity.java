@@ -171,22 +171,7 @@ public class DeviceScanActivity extends ListActivity {
             UIManager.sharedInstance().showToastMessage(this, "connecting failed");
             return;
         }
-
         _dlg = UIManager.sharedInstance().showProgressDialog(this, null, "connecting...", true);
-
-        /*
-        final Intent intent = new Intent(this, ControlActivity.class);
-        intent.putExtra(ControlActivity.EXTRAS_DEVICE_NAME, device.getName());
-        intent.putExtra(ControlActivity.EXTRAS_DEVICE_ADDRESS, device.getAddress());
-
-        if (mScanning) {
-            AppContext._bluetoothAdapter.stopLeScan(mLeScanCallback);
-            mScanning = false;
-        }
-
-        setResult(Activity.RESULT_OK, intent);
-        finish();
-        */
     }
 
     public void onEventMainThread(SEvent e) {
