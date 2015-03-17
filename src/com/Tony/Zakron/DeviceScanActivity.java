@@ -16,6 +16,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.Tony.Zakron.Common.AppContext;
+import com.Tony.Zakron.Common.CommonMethods;
 import com.Tony.Zakron.ConnectBlue.SerialPort;
 import com.Tony.Zakron.ble.BleManager;
 import com.Tony.Zakron.ble.BlePeripheral;
@@ -274,16 +275,9 @@ public class DeviceScanActivity extends ListActivity {
 
             byte[] scanRecord = peripheral.scanRecord();
             if (scanRecord != null) {
-                StringBuilder sbData = new StringBuilder();
-                sbData.append('{');
-                int t;
-                for (i = 0; i < scanRecord.length; i++) {
-                    t = (int) (scanRecord[i] & 0xFF);
-                    sbData.append(String.format("%02X", t));
-                    if (i < scanRecord.length - 1)
-                        sbData.append(' ');
-                }
-                sbData.append('}');
+                String sbData = "{";
+                sbData = sbData + CommonMethods.convertByteArrayToString(scanRecord);
+                sbData = sbData + "}";
                 viewHolder.deviceAddress.setText(sbData);
             }
             else {

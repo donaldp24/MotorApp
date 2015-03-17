@@ -2,6 +2,7 @@ package com.Tony.Zakron;
 
 import android.app.Application;
 import com.Tony.Zakron.ConnectBlue.SerialPort;
+import com.Tony.Zakron.Motor.Motor;
 import com.radiusnetworks.bluetooth.BluetoothCrashResolver;
 
 /**
@@ -10,6 +11,7 @@ import com.radiusnetworks.bluetooth.BluetoothCrashResolver;
 public class MotorApplication extends Application {
     private BluetoothCrashResolver bluetoothCrashResolver = null;
     private SerialPort _selectedPort;
+    private Motor _selectedMotor;
 
     @Override
     public void onCreate() {
@@ -29,6 +31,14 @@ public class MotorApplication extends Application {
 
     public SerialPort getSerialPort() {
         return _selectedPort;
+    }
+
+    public void setMotor(Motor motor) {
+        _selectedMotor = motor;
+    }
+
+    public Motor getMotor() {
+        return _selectedMotor;
     }
 
 }

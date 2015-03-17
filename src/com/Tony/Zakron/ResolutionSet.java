@@ -22,7 +22,7 @@ public class ResolutionSet {
 
     // designed width & height for landscape mode
 	public static int _nDesignWidth = 480;
-	public static int _nDesignHeight = 800;
+	public static int _nDesignHeight = 700;
 
 	public static ResolutionSet _instance = new ResolutionSet();
 
@@ -30,8 +30,7 @@ public class ResolutionSet {
 
 	}
 
-	public void setResolution(int x, int y, boolean isPortrate)
-	{
+	public void setResolution(int x, int y, boolean isPortrate) {
         if (isPortrate)
 		    _fXpro = (float)x / _nDesignWidth;
         else

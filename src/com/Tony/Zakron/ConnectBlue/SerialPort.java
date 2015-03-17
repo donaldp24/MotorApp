@@ -54,6 +54,7 @@ public class SerialPort {
     public static final String kSerialPortDataUpdatedNotification = "serial port data updated notification";
     public static final String kSerialPortConnectedNotification = "serial port connected notification";
     public static final String kSerialPortDisconnectedNotification = "serial port disconnected notification";
+    public static final String kSerialPortReadDataNotification = "serial port read data notification";
 
     public static final String kLocalCharacteristicNotificationFailed = "kLocalCharacteristicNotificationFailed";
 
@@ -87,6 +88,11 @@ public class SerialPort {
     private BlePeripheral _peripheral;
     private boolean _isRegistered;
 
+    public static class ReadData {
+        public byte[] bytes;
+        public SerialPort port;
+    }
+
     public SerialPort(BlePeripheral peripheral) {
         _serialPortVersion = 0;
         _peripheral = peripheral;
@@ -110,6 +116,10 @@ public class SerialPort {
                 }
             }
         }
+    }
+
+    public int getDeviceStatus() {
+        return mDeviceState;
     }
 
     protected int _getVersionFromString(String sVersion)  {
@@ -236,7 +246,7 @@ public class SerialPort {
         }
     }
 
-    public void onEventMainThread(SEvent e) {
+    public void onEvent(SEvent e) {
         if (EventManager.isEvent(e, BleManager.kBLEManagerConnectedPeripheralNotification)) {
             _peripheralConnected((BlePeripheral)e.object);
         }
@@ -369,6 +379,10 @@ public class SerialPort {
     protected void _readCharacteristic(BlePeripheral peripheral, BluetoothGattCharacteristic characteristic, byte[] value) {
         if (peripheral != _peripheral || peripheral == null)
             return;
+        ReadData data = new ReadData();
+        data.port = this;
+        data.bytes = value;
+        EventManager.sharedInstance().post(kSerialPortReadDataNotification, this);
     }
 
     protected void _writedCharacteristic(BlePeripheral peripheral, BluetoothGattCharacteristic characteristic, boolean success) {

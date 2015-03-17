@@ -3,6 +3,9 @@ package com.Tony.Zakron;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
+import com.Tony.Zakron.Motor.Motor;
+import com.Tony.Zakron.event.EventManager;
+import com.Tony.Zakron.event.SEvent;
 
 /**
  * Created by xiaoxue on 3/9/2015.
@@ -13,6 +16,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private View llCalibrate;
     private View llProgram;
     private View llSettings;
+
+    private Motor _motor;
+    private Object _dlg;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -30,6 +36,17 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         llCalibrate.setOnClickListener(this);
         llProgram.setOnClickListener(this);
         llSettings.setOnClickListener(this);
+
+        EventManager.sharedInstance().register(this);
+
+        _motor = new Motor(((MotorApplication)getApplication()).getSerialPort());
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        EventManager.sharedInstance().unregister(this);
     }
 
     @Override
@@ -60,5 +77,27 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     protected void onSettingsClicked() {
         //
+    }
+
+    public void onEventMainThread(SEvent e) {
+        if (EventManager.isEvent(e, Motor.kMotorConnectedNotification)) {
+            _dlg = UIManager.sharedInstance().showProgressDialog(this, null, "Initializing motor...", true);
+
+            _motor.initMotor();
+        }
+        else if (EventManager.isEvent(e, Motor.kMotorDisconnectedNotification)) {
+            if (_dlg != null) {
+                UIManager.sharedInstance().dismissProgressDialog(_dlg);
+                _dlg = null;
+            }
+        }
+        else if (EventManager.isEvent(e, Motor.kMotorInitedNotification)) {
+            if (_dlg != null) {
+                UIManager.sharedInstance().dismissProgressDialog(_dlg);
+                _dlg = null;
+            }
+
+            UIManager.sharedInstance().showToastMessage(this, "Motor initialized successfully!");
+        }
     }
 }
