@@ -78,13 +78,28 @@ public class Motor {
     // last time at received status packet
     private Long lastTimeForStatusPacket = 0L;
 
+    private boolean registered = false;
+
     public Motor(SerialPort serialPort) {
+        _serialPort = serialPort;
+        registered = false;
+
+        initialize();
+    }
+
+    public void initialize() {
+        _serialPort.initialize();
+
         _length = 0;
         _commandLength = 0;
-        _serialPort = serialPort;
         _address = 0;
         if (_serialPort.getDeviceStatus() == SerialPort.DEVICE_CONNECTED) {
             _motorConnected(_serialPort);
+        }
+
+        if (!registered) {
+            EventManager.sharedInstance().register(this);
+            registered = true;
         }
     }
 
@@ -478,6 +493,7 @@ public class Motor {
     protected void _motorReadData(SerialPort.ReadData data) {
         if (data.port != _serialPort)
             return;
+
         // received data
         String strReadData = CommonMethods.convertByteArrayToString(data.bytes);
         Logger.log(TAG, "read data : %s", strReadData);

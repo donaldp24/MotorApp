@@ -94,8 +94,14 @@ public class SerialPort {
     }
 
     public SerialPort(BlePeripheral peripheral) {
-        _serialPortVersion = 0;
         _peripheral = peripheral;
+
+        initialize();
+    }
+
+    public void initialize() {
+        _serialPortVersion = 0;
+
 
         EventManager.sharedInstance().register(this);
         _isRegistered = true;
@@ -109,10 +115,10 @@ public class SerialPort {
         _modelNumberCharacteristic = null;
 
         // check state
-        if (peripheral != null) {
-            if (peripheral.connectionState() == BlePeripheral.STATE_CONNECTED) {
+        if (_peripheral != null) {
+            if (_peripheral.connectionState() == BlePeripheral.STATE_CONNECTED) {
                 if (mDeviceState == DEVICE_NOTCONNECTED) {
-                    _peripheralConnected(peripheral);
+                    _peripheralConnected(_peripheral);
                 }
             }
         }
@@ -385,9 +391,12 @@ public class SerialPort {
     protected void _readCharacteristic(BlePeripheral peripheral, BluetoothGattCharacteristic characteristic, byte[] value) {
         if (peripheral != _peripheral || peripheral == null)
             return;
+        Logger.log(TAG, "SerialPort._readCharacteristic");
+
         ReadData data = new ReadData();
         data.port = this;
         data.bytes = value;
+
         EventManager.sharedInstance().post(kSerialPortReadDataNotification, data);
     }
 
