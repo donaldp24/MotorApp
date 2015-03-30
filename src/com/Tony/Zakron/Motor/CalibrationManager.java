@@ -66,6 +66,11 @@ public class CalibrationManager {
             public void run() {
                 while(!_stopped) {
                     reCal();
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         });
@@ -103,6 +108,7 @@ public class CalibrationManager {
             }
             limitStatus = 0;
             _phase = PHASE_CAL1;
+            Logger.log(TAG, "calibrating - change to PHASE_CAL1");
         }
         else if (_phase == PHASE_CAL1) {
             if ((_motor.buffer()[0] & Motor.STATBIT_LIMITREAR) == 0) // Wait for limit break

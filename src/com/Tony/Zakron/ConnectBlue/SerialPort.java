@@ -103,9 +103,10 @@ public class SerialPort {
         _serialPortVersion = 0;
 
 
-        EventManager.sharedInstance().register(this);
-        _isRegistered = true;
-
+        if (!_isRegistered) {
+            EventManager.sharedInstance().register(this);
+            _isRegistered = true;
+        }
         // init services and characteristics
         _service = null;
         _fifoCharacteristic = null;

@@ -61,7 +61,7 @@ public class Motor {
     public long _systemVelocity = 1500000;
     public long _systemAcceleration = 1000;
 
-    private byte _commandBuffer[] = new byte[16];
+    private byte _commandBuffer[] = new byte[160];
     private byte _commandLength = 0;
 
     private int statusPacketLength = 14;
@@ -88,7 +88,7 @@ public class Motor {
     }
 
     public void initialize() {
-        _serialPort.initialize();
+        //_serialPort.initialize();
 
         _length = 0;
         _commandLength = 0;
@@ -129,6 +129,7 @@ public class Motor {
 
     // Stops (smoothly) any motion currently in progress
     public void stopMotor() {
+        Logger.log(TAG, "stopMotor()");
         byte chkSum;
         chkSum = 0x00;
 
@@ -149,6 +150,7 @@ public class Motor {
 
     //Turns on the amp, sets to stop smoothly, then sets gain
     public void startMotor() {
+        Logger.log(TAG, "startMotor()");
         byte chkSum;
         chkSum = 0x00;
 
@@ -292,6 +294,7 @@ public class Motor {
     //Velocity profile mode. No need for position send.
     void velMotor(byte direction)
     {
+        Logger.log(TAG, "velMotor()");
         byte chkSum;
         byte tempbytes[] = new byte[4];
         byte controlByte;
@@ -318,6 +321,8 @@ public class Motor {
         chkSum = putchc0(tempbytes[3], chkSum);
 
         putch0(chkSum); // Checksum
+        flush();
+
         recieveStatusPacket(); // Recieve response from moto
         /*** Trigger LED On ***/
     } // velMotor
@@ -327,6 +332,8 @@ public class Motor {
     // Home captured on change of given limit, and stop smoothly once home is captured
     void setMotoHome(byte limit)
     {
+        Logger.log(TAG, "setMotoHome()");
+
         byte chkSum;
 
         chkSum = 0;
@@ -344,6 +351,8 @@ public class Motor {
         } // if
 
         putch0(chkSum);
+        flush();
+
         recieveStatusPacket(); //Recieve response from moto
     } //setMotoHome
 
@@ -414,12 +423,12 @@ public class Motor {
         int i = 0;
         while (true) {
             try {
-                Thread.sleep(10);
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
             i++;
-            if (i >= 100)
+            if (i >= 20)
                 break;
             if (_newBufferSize >= statusPacketLength)
                 break;
@@ -582,6 +591,7 @@ public class Motor {
         // relayOnB(RELAY_SQFINGERS);
 
         if(_status == Motor.STATUS_OFF) {
+            Logger.e(TAG, "start motor failed in initMotor()");
             stopMotor();
             // relayOnB(RELAY_SQFINGERS);
         } // if
@@ -590,6 +600,7 @@ public class Motor {
 
     //Clears Motor, and resets position home, and all related variables
     public void resetMotor() {
+        Logger.log(TAG, "resetMotor()");
         byte chkSum;
         chkSum = 0x00;
 
@@ -628,17 +639,19 @@ public class Motor {
     }
 
     private void putch0(byte bt) {
-        if ((bt & 0xFF) == 0xAA) {
-            memset(_commandBuffer, (byte)0xFF, 16);
-            _commandLength = 0;
+        synchronized (_commandBuffer) {
+            if ((bt & 0xFF) == 0xAA) {
+                memset(_commandBuffer, (byte) 0xFF, 16);
+                _commandLength = 0;
 
-            memset(_motorReadingBuffer, (byte)0xFF, 16);
-            _motorReadingBufferSize = 0;
+                memset(_motorReadingBuffer, (byte) 0xFF, 16);
+                _motorReadingBufferSize = 0;
 
-            _newBufferSize = 0;
+                _newBufferSize = 0;
+            }
+            _commandBuffer[_commandLength] = bt;
+            _commandLength++;
         }
-        _commandBuffer[_commandLength] = bt;
-        _commandLength++;
     }
 
     private byte putchc0(byte bt, byte checksum) {
@@ -655,21 +668,22 @@ public class Motor {
 
     private boolean flush() {
         boolean ret = true;
-        if (_serialPort != null) {
-            byte data[] = new byte[_commandLength];
-            String s = "";
-            for (int i = 0; i < _commandLength; i++) {
-                data[i] = _commandBuffer[i];
-                s = String.format("%s %02X", s, (int)data[i]);
+        synchronized (_commandBuffer) {
+            if (_serialPort != null) {
+                byte data[] = new byte[_commandLength];
+                String s = "";
+                for (int i = 0; i < _commandLength; i++) {
+                    data[i] = _commandBuffer[i];
+                    s = String.format("%s %02X", s, (int) data[i]);
+                }
+                Logger.log(TAG, String.format("writing data : %s", s));
+                ret = _serialPort.write(data);
+            } else {
+                Logger.e(TAG, "flush() failed, serial port is null");
+                ret = false;
             }
-            Logger.log(TAG, String.format("writing data : %s", s));
-            ret = _serialPort.write(data);
+            _commandLength = 0;
         }
-        else {
-            Logger.e(TAG, "flush() failed, serial port is null");
-            ret = false;
-        }
-        _commandLength = 0;
 
         // sleep
         try {

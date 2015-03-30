@@ -99,7 +99,7 @@ public class BlePeripheral {
         public void onCharacteristicRead(BluetoothGatt gatt,
                                          BluetoothGattCharacteristic characteristic,
                                          int status) {
-            Logger.log(TAG, "onCharacteristicRead, length = ", (characteristic.getValue() != null)?(characteristic.getValue().length):0);
+            Logger.log(TAG, "onCharacteristicRead, length = %d", (characteristic.getValue() != null)?(characteristic.getValue().length):0);
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (delegate != null)
                     delegate.gattDataAvailable(BlePeripheral.this, characteristic, characteristic.getValue());
@@ -109,7 +109,7 @@ public class BlePeripheral {
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt,
                                             BluetoothGattCharacteristic characteristic) {
-            Logger.log(TAG, "onCharacteristicChanged, length = ", (characteristic.getValue() != null)?(characteristic.getValue().length):0);
+            Logger.log(TAG, "onCharacteristicChanged, length = %d", (characteristic.getValue() != null)?(characteristic.getValue().length):0);
             if (delegate != null)
                 delegate.gattDataAvailable(BlePeripheral.this, characteristic, characteristic.getValue());
         }
