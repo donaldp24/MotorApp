@@ -200,6 +200,12 @@ public class SerialPort {
             _peripheral.setCharacteristicNotificationV1(_fifoCharacteristic, true);
         }
         else {
+            _peripheral.setCharacteristicNotification(_fifoCharacteristic, false);
+            try {
+                Thread.sleep(400);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             _peripheral.setCharacteristicNotification(_fifoCharacteristic, true);
         }
     }

@@ -201,6 +201,9 @@ public class DeviceScanActivity extends ListActivity {
 
                 Logger.log(TAG, "starting to init motor...");
 
+                _motor = new Motor(_serialPort);
+                _motor.initMotor();
+/*
                 _dlg = UIManager.sharedInstance().showProgressDialog(this, null, "initializing motor...", true);
                 _motor = new Motor(_serialPort);
                 Thread thread = new Thread(new Runnable() {
@@ -211,7 +214,7 @@ public class DeviceScanActivity extends ListActivity {
                         EventManager.sharedInstance().post(kMotorInitializedSuccess, _motor);
                     }
                 });
-                thread.start();
+                thread.start();*/
             }
         }
         else if (EventManager.isEvent(e, SerialPort.kSerialPortDisconnectedNotification)) {

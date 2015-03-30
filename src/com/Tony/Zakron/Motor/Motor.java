@@ -554,6 +554,7 @@ public class Motor {
         putch0((byte)(0x31 + _address));
         flush();
 
+
         Logger.log(TAG, "receiveStatusPacket for defining status packet...");
         // request status packet
         recieveStatusPacket();
@@ -568,6 +569,7 @@ public class Motor {
             stopMotor();
             // relayOnB(RELAY_SQFINGERS);
         } // if
+
     }
 
     //Clears Motor, and resets position home, and all related variables
@@ -655,7 +657,7 @@ public class Motor {
 
         // sleep
         try {
-            Thread.sleep(10);
+            Thread.sleep(100);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
