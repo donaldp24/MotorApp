@@ -550,7 +550,7 @@ public class Motor {
         putch0((byte)0xAA);
         putch0(_address);
         putch0((byte)0x12);
-        putch0((byte)0x1F); // 00011111
+        putch0((byte) 0x1F); // 00011111
         putch0((byte)(0x31 + _address));
         flush();
 
@@ -644,10 +644,11 @@ public class Motor {
                 data[i] = _commandBuffer[i];
                 s = String.format("%s %02X", s, (int)data[i]);
             }
-            Log.v("ControlApp", String.format("writing data : %s", s));
+            Logger.log(TAG, String.format("writing data : %s", s));
             ret = _serialPort.write(data);
         }
         else {
+            Logger.e(TAG, "flush() failed, serial port is null");
             ret = false;
         }
         _commandLength = 0;
