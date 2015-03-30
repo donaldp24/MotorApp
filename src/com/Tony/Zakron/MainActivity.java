@@ -1,6 +1,7 @@
 package com.Tony.Zakron;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import com.Tony.Zakron.Motor.Motor;
@@ -69,6 +70,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     }
 
     protected void onCaliabrateClicked() {
+        Intent intent = new Intent(this, CalibrationActivity.class);
+        startActivity(intent);
     }
 
     protected void onProgramClicked() {

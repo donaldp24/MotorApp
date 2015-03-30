@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:id="@+id/layout_parent"
+              android:orientation="vertical"
+              android:layout_width="fill_parent"
+              android:layout_height="fill_parent"
+        >
+
+    <LinearLayout
+            android:layout_marginTop="10px"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            >
+        <LinearLayout
+                android:id="@+id/llPositionError"
+                android:layout_marginTop="10px"
+                android:layout_width="match_parent"
+                android:layout_height="40px"
+                android:orientation="horizontal"
+                android:background="#303030"
+                >
+            <TextView
+                    style="@style/settings_label"
+                    android:text="Position Error (PE)"
+
+                    />
+            <TextView
+                      android:text="100000"
+                      android:id="@+id/textPositionError"
+                      style="@style/settings_value"
+                    />
+        </LinearLayout>
+
+        <LinearLayout
+                android:id="@+id/llKP"
+                android:layout_marginTop="10px"
+                android:layout_width="match_parent"
+                android:layout_height="40px"
+                android:orientation="horizontal"
+                android:background="#303030"
+                >
+            <TextView
+                    style="@style/settings_label"
+                    android:text="KP"
+
+                    />
+            <TextView
+                    android:text="1000"
+                    android:id="@+id/textKP"
+                    style="@style/settings_value"
+                    />
+        </LinearLayout>
+
+        <LinearLayout
+                android:id="@+id/llKD"
+                android:layout_marginTop="10px"
+                android:layout_width="match_parent"
+                android:layout_height="40px"
+                android:orientation="horizontal"
+                android:background="#303030"
+                >
+            <TextView
+                    style="@style/settings_label"
+                    android:text="KD"
+
+                    />
+            <TextView
+                    style="@style/settings_value"
+                    android:text="5000"
+
+                    android:id="@+id/textKD"
+                    />
+        </LinearLayout>
+        <LinearLayout
+                android:id="@+id/llKI"
+                android:layout_marginTop="10px"
+                android:layout_width="match_parent"
+                android:layout_height="40px"
+                android:orientation="horizontal"
+                android:background="#303030"
+                >
+            <TextView
+                    style="@style/settings_label"
+                    android:text="KI"
+
+                    />
+            <TextView
+                    style="@style/settings_value"
+                    android:text="200"
+
+                    android:id="@+id/textKI"
+                    />
+        </LinearLayout>
+        <LinearLayout
+                android:id="@+id/llIntegrationLimit"
+                android:layout_marginTop="10px"
+                android:layout_width="match_parent"
+                android:layout_height="40px"
+                android:orientation="horizontal"
+                android:background="#303030"
+                >
+            <TextView
+                    style="@style/settings_label"
+                    android:text="Integration Limit (IL)"
+
+                    />
+            <TextView
+                    style="@style/settings_value"
+                    android:text="0"
+
+                    android:id="@+id/textIntegrationLimit"
+                    />
+        </LinearLayout>
+        <LinearLayout
+                android:id="@+id/llOutputLimit"
+                android:layout_marginTop="10px"
+                android:layout_width="match_parent"
+                android:layout_height="40px"
+                android:orientation="horizontal"
+                android:background="#303030"
+                >
+            <TextView
+                    style="@style/settings_label"
+                    android:text="Output Limit (OL)"
+
+                    />
+            <TextView
+                    style="@style/settings_value"
+                    android:text="255"
+
+                    android:id="@+id/textOutputLimit"
+                    />
+        </LinearLayout>
+        <LinearLayout
+                android:id="@+id/llCurrentLimit"
+                android:layout_marginTop="10px"
+                android:layout_width="match_parent"
+                android:layout_height="40px"
+                android:orientation="horizontal"
+                android:background="#303030"
+                >
+            <TextView
+                    style="@style/settings_label"
+                    android:text="Current Limit (CL)"
+
+                    />
+            <TextView
+                    style="@style/settings_value"
+                    android:text="11"
+
+                    android:id="@+id/textCurrentLimit"
+                    />
+        </LinearLayout>
+        <LinearLayout
+                android:id="@+id/llAmpDeadBand"
+                android:layout_marginTop="10px"
+                android:layout_width="match_parent"
+                android:layout_height="40px"
+                android:orientation="horizontal"
+                android:background="#303030"
+                >
+            <TextView
+                    style="@style/settings_label"
+                    android:text="Amp DeadBand (Amp)"
+
+                    />
+            <TextView
+                    style="@style/settings_value"
+                    android:text="0"
+
+                    android:id="@+id/textAmpDeadBand"
+                    />
+        </LinearLayout>
+        <LinearLayout
+                android:id="@+id/llServoRate"
+                android:layout_marginTop="10px"
+                android:layout_width="match_parent"
+                android:layout_height="40px"
+                android:orientation="horizontal"
+                android:background="#303030"
+                >
+            <TextView
+                    style="@style/settings_label"
+                    android:text="Servo Rate (SR)"
+
+                    />
+            <TextView
+                    style="@style/settings_value"
+                    android:text="1"
+
+                    android:id="@+id/textServoRate"
+                    />
+        </LinearLayout>
+        <LinearLayout
+                android:id="@+id/llSystemVelocity"
+                android:layout_marginTop="10px"
+                android:layout_width="match_parent"
+                android:layout_height="40px"
+                android:orientation="horizontal"
+                android:background="#303030"
+                >
+            <TextView
+                    style="@style/settings_label"
+                    android:text="System Velocity"
+
+                    />
+            <TextView
+
+                    style="@style/settings_value"
+                    android:text="1500000"
+
+                    android:id="@+id/textSystemVelocity"
+                    />
+        </LinearLayout>
+        <LinearLayout
+                android:id="@+id/llSystemAcceleration"
+                android:layout_marginTop="10px"
+                android:layout_width="match_parent"
+                android:layout_height="40px"
+                android:orientation="horizontal"
+                android:background="#303030"
+                >
+            <TextView
+                    style="@style/settings_label"
+                    android:text="System Acceleration"
+
+                    />
+            <TextView
+                    style="@style/settings_value"
+                    android:text="1000"
+
+                    android:id="@+id/textSystemAcceleration"
+                    />
+        </LinearLayout>
+        <LinearLayout
+                android:id="@+id/llEncoderCounts"
+                android:layout_marginTop="10px"
+                android:layout_width="match_parent"
+                android:layout_height="40px"
+                android:orientation="horizontal"
+                android:background="#303030"
+                >
+            <TextView
+                    style="@style/settings_label"
+                    android:text="Encoder Counts (counts/mm)"
+
+                    />
+            <TextView
+                    style="@style/settings_value"
+                    android:text="200"
+
+                    android:id="@+id/textEncoderCounts"
+                    />
+        </LinearLayout>
+    </LinearLayout>
+</RelativeLayout>
+

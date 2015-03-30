@@ -51,11 +51,11 @@ public class DeviceScanActivity extends ListActivity {
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getActionBar().setTitle(R.string.title_devices);
 
         mLeDeviceListAdapter = new LeDeviceListAdapter();
         setListAdapter(mLeDeviceListAdapter);
 
-        getActionBar().setTitle(R.string.title_devices);
         mHandler = new Handler(this.getMainLooper());
         mStopHandler = new Handler(this.getMainLooper());
 

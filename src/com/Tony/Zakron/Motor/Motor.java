@@ -7,8 +7,6 @@ import com.Tony.Zakron.event.EventManager;
 import com.Tony.Zakron.event.SEvent;
 import com.Tony.Zakron.helper.Logger;
 
-import java.util.ArrayList;
-
 /**
  * Created with IntelliJ IDEA.
  * User: xiaoxue
@@ -32,8 +30,14 @@ public class Motor {
     private int mMotorStatus = MOTOR_NOTCONNECTED;
 
     // movement direction
-    public static final int DIRFWD = 0x00;			// Forward Movement
-    public static final int DIRREV = 0x40;			// Reverse Movement
+    public static final byte DIRFWD = 0x00;			// Forward Movement
+    public static final byte DIRREV = 0x40;			// Reverse Movement
+
+    public static final byte LIMITREAR = 0x01;		// Limit One Bit (for set home Command)
+    public static final byte LIMITRAM = 0x02	;	// Limit Two bit (for set Home Command)
+    public static final byte LIMITINDEX = (byte)0x08;		// Index Bit (for setHome Command)
+
+    public static final int CALSPEEDFACTOR = 10;
 
     // Status Bits etc.
     public static final int STATBIT_DONE = 0x01;	// Move done bit of status Byte
@@ -42,7 +46,8 @@ public class Motor {
     public static final int STATBIT_HOME = 0x80;	// Home in progress bit of Status Byte
     public static final int STATBIT_INDEX = 0x01;	// Index bit of Aux Status Byte
 
-    public static final int CALSPEEDFACTOR = 10;
+    // Time Out limits
+    public static final int ONEREVOLUTION = 2000;	// Time out count for our cal sequence
 
     public static final String kMotorConnectedNotification = "kMotorConnectedNotification";
     public static final String kMotorDisconnectedNotification = "kMotorDisconnectedNotification";
@@ -64,8 +69,8 @@ public class Motor {
     private byte[] _buffer = new byte[160];
     private int _length;
 
-    private byte[] _motorBuffer = new byte[160];
-    private int _motorBufferSize = 0;
+    private byte[] _motorReadingBuffer = new byte[160];
+    private int _motorReadingBufferSize = 0;
     private int _newBufferSize = 0;
 
     private SerialPort _serialPort;
@@ -81,6 +86,10 @@ public class Motor {
         if (_serialPort.getDeviceStatus() == SerialPort.DEVICE_CONNECTED) {
             _motorConnected(_serialPort);
         }
+    }
+
+    public byte[] buffer() {
+        return _buffer;
     }
 
     public SerialPort serialPort() {
@@ -265,6 +274,65 @@ public class Motor {
         /*** Trigger LED On ***/
     }
 
+    //Velocity profile mode. No need for position send.
+    void velMotor(byte direction)
+    {
+        byte chkSum;
+        byte tempbytes[] = new byte[4];
+        byte controlByte;
+
+        chkSum = 0x00;
+        controlByte = (byte)(0xB6 | direction); //control byte 10110110 (we toggle bit 6)
+
+        putch0((byte)0xAA);			//header byte
+        chkSum = putchc0(_address, chkSum);	//address byte
+        chkSum = putchc0((byte)0x94, chkSum); //command byte
+        chkSum = putchc0(controlByte, chkSum);
+
+        //Remaing four by two packets containing velocity, then acceleration
+        longtobyte(_systemVelocity, tempbytes);
+        chkSum = putchc0(tempbytes[0], chkSum);
+        chkSum = putchc0(tempbytes[1], chkSum);
+        chkSum = putchc0(tempbytes[2], chkSum);
+        chkSum = putchc0(tempbytes[3], chkSum);
+
+        longtobyte(_systemAcceleration, tempbytes);
+        chkSum = putchc0(tempbytes[0], chkSum);
+        chkSum = putchc0(tempbytes[1], chkSum);
+        chkSum = putchc0(tempbytes[2], chkSum);
+        chkSum = putchc0(tempbytes[3], chkSum);
+
+        putch0(chkSum); // Checksum
+        recieveStatusPacket(); // Recieve response from moto
+        /*** Trigger LED On ***/
+    } // velMotor
+
+
+    // Stop Smoothly when index is changed
+    // Home captured on change of given limit, and stop smoothly once home is captured
+    void setMotoHome(byte limit)
+    {
+        byte chkSum;
+
+        chkSum = 0;
+
+        putch0((byte)0xAA);
+        chkSum = putchc0(_address, chkSum);
+        chkSum = putchc0((byte)0x19, chkSum);
+        if (limit == LIMITINDEX)
+        {
+            chkSum = putchc0((byte)(0x10 | limit), chkSum);
+        }
+        else
+        {
+            chkSum = putchc0((byte)(0x20 | limit), chkSum);
+        } // if
+
+        putch0(chkSum);
+        recieveStatusPacket(); //Recieve response from moto
+    } //setMotoHome
+
+
     //Clear Sticky Bits
     public void clearMotoStickyBits() {
         byte chkSum;
@@ -281,23 +349,23 @@ public class Motor {
     }
 
     // Ask for and recieve a status packet
-    public void requestStatusPacket() {
+    public boolean requestStatusPacket() {
         Logger.log(TAG, "requestStatusPacket");
         byte chkSum;
         chkSum = 0x00;
-/*
+
         putch0((byte)0xAA);
-        chkSum = putchc0(motor._address, chkSum);
+        chkSum = putchc0(_address, chkSum);
         chkSum = putchc0((byte)0x0E, chkSum);    // R.Z. 110107  This is the new NOP  was  0x0d
         putch0(chkSum);
-        */
 
-
+        /*
         putch0((byte)0xAA);
         chkSum = putchc0(_address, chkSum);
         chkSum = putchc0((byte)0x13, chkSum);
         chkSum = putchc0((byte)0x01, chkSum);
         putch0(chkSum);
+        */
 
         /*
         putch0((byte)0xAA);
@@ -307,12 +375,19 @@ public class Motor {
         putch0(chkSum);
         */
 
-        flush();
+        boolean ret = flush();
 
-        lastTimeForStatusPacket = System.currentTimeMillis();
+        if (ret == false) {
+            Logger.log(TAG, "requestStatusPacket, flush() failed");
+            return false;
+        }
+        else {
+            lastTimeForStatusPacket = System.currentTimeMillis();
 
-        Logger.log(TAG, "requestStatusPacket, calling receiveStatusPacket");
-        recieveStatusPacket();
+            Logger.log(TAG, "requestStatusPacket, calling receiveStatusPacket");
+            recieveStatusPacket();
+            return true;
+        }
     }
 
     // A delay sequence that waits for a full and complete status packet to be
@@ -341,7 +416,11 @@ public class Motor {
         }
         else {
             Logger.log(TAG, "receiveStatusPacket...!(_newBufferSize >= statusPacketLength), calling requestStatusPacket()");
-            requestStatusPacket();
+            boolean ret = requestStatusPacket();
+            if (ret == false) {
+                Logger.log(TAG, "receiveStatusPacket... called requestStatusPacket() - failed, return");
+                return;
+            }
         }
     }
 
@@ -406,25 +485,25 @@ public class Motor {
         if (data.bytes == null || data.bytes.length == 0)
             return;
 
-        synchronized (_motorBuffer) {
-            if (_motorBufferSize < statusPacketLength) {
+        synchronized (_motorReadingBuffer) {
+            if (_motorReadingBufferSize < statusPacketLength) {
                 for (int i = 0; i < data.bytes.length; i++) {
-                    _motorBuffer[_motorBufferSize + i] = data.bytes[i];
+                    _motorReadingBuffer[_motorReadingBufferSize + i] = data.bytes[i];
                 }
-                _motorBufferSize = _motorBufferSize + data.bytes.length;
+                _motorReadingBufferSize = _motorReadingBufferSize + data.bytes.length;
             }
             else {
                 for (int i = 0; i < data.bytes.length; i++) {
-                    _motorBuffer[i] = data.bytes[i];
+                    _motorReadingBuffer[i] = data.bytes[i];
                 }
-                _motorBufferSize = data.bytes.length;
+                _motorReadingBufferSize = data.bytes.length;
             }
 
-            if (_motorBufferSize == statusPacketLength) {
-                byte checksum = calCheckSum(_motorBuffer, statusPacketLength - 1);
-                if (checksum == _motorBuffer[statusPacketLength - 1]) {
+            if (_motorReadingBufferSize == statusPacketLength) {
+                byte checksum = calCheckSum(_motorReadingBuffer, statusPacketLength - 1);
+                if (checksum == _motorReadingBuffer[statusPacketLength - 1]) {
                     for (int i = 0; i < statusPacketLength; i++) {
-                        _buffer[i] = _motorBuffer[i];
+                        _buffer[i] = _motorReadingBuffer[i];
                     }
                     _length = statusPacketLength;
                     _newBufferSize = statusPacketLength;
@@ -469,7 +548,7 @@ public class Motor {
         putch0((byte)0xAA);
         putch0(_address);
         putch0((byte)0x12);
-        putch0((byte)0x1F); // 00011101
+        putch0((byte)0x1F); // 00011111
         putch0((byte)(0x31 + _address));
         flush();
 
@@ -532,8 +611,8 @@ public class Motor {
             memset(_commandBuffer, (byte)0xFF, 16);
             _commandLength = 0;
 
-            memset(_motorBuffer, (byte)0xFF, 16);
-            _motorBufferSize = 0;
+            memset(_motorReadingBuffer, (byte)0xFF, 16);
+            _motorReadingBufferSize = 0;
 
             _newBufferSize = 0;
         }
@@ -553,7 +632,8 @@ public class Motor {
             mem[i] = val;
     }
 
-    private void flush() {
+    private boolean flush() {
+        boolean ret = true;
         if (_serialPort != null) {
             byte data[] = new byte[_commandLength];
             String s = "";
@@ -562,7 +642,10 @@ public class Motor {
                 s = String.format("%s %02X", s, (int)data[i]);
             }
             Log.v("ControlApp", String.format("writing data : %s", s));
-            _serialPort.write(data);
+            ret = _serialPort.write(data);
+        }
+        else {
+            ret = false;
         }
         _commandLength = 0;
 
@@ -572,6 +655,8 @@ public class Motor {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        return ret;
     }
 
     //takes 2000 and turns to 000007D0

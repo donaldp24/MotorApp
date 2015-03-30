@@ -75,6 +75,12 @@ public class BlePeripheral {
 
                 if (delegate != null)
                     delegate.gattDisconnected(BlePeripheral.this);
+
+                try {
+                    close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
 
