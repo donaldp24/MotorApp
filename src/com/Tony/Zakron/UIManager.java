@@ -33,9 +33,14 @@ public class UIManager {
     }
 
     public void dismissProgressDialog(Object dlg) {
-        ProgressDialog progressDialog = (ProgressDialog)dlg;
-        if(progressDialog != null && progressDialog.isShowing())
-            progressDialog.dismiss();
+        try {
+            ProgressDialog progressDialog = (ProgressDialog) dlg;
+            if (progressDialog != null && progressDialog.isShowing())
+                progressDialog.dismiss();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static Toast gToast = null;

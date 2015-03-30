@@ -41,6 +41,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         EventManager.sharedInstance().register(this);
 
         _motor = new Motor(((MotorApplication)getApplication()).getSerialPort());
+
     }
 
     @Override

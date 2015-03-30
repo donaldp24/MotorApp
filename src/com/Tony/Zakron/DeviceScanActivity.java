@@ -18,11 +18,13 @@ import android.widget.Toast;
 import com.Tony.Zakron.Common.AppContext;
 import com.Tony.Zakron.Common.CommonMethods;
 import com.Tony.Zakron.ConnectBlue.SerialPort;
+import com.Tony.Zakron.Motor.Motor;
 import com.Tony.Zakron.ble.BleManager;
 import com.Tony.Zakron.ble.BlePeripheral;
 import com.Tony.Zakron.ble.BleScanner;
 import com.Tony.Zakron.event.EventManager;
 import com.Tony.Zakron.event.SEvent;
+import com.Tony.Zakron.helper.Logger;
 
 import java.util.ArrayList;
 
@@ -35,6 +37,8 @@ import java.util.ArrayList;
  */
 
 public class DeviceScanActivity extends ListActivity {
+    public static final String TAG = "DeviceScanActivity";
+
     private LeDeviceListAdapter mLeDeviceListAdapter;
     private boolean mScanning;
 
@@ -48,6 +52,8 @@ public class DeviceScanActivity extends ListActivity {
     private BlePeripheral _selectedPeripheral;
     private SerialPort _serialPort;
     private Object _dlg;
+    private Motor _motor;
+    private static final String kMotorInitializedSuccess = "devicescan_kMotorInitializedSuccess";
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -181,6 +187,7 @@ public class DeviceScanActivity extends ListActivity {
         }
         else if (EventManager.isEvent(e, SerialPort.kSerialPortConnectedNotification)) {
             if (_serialPort == e.object) {
+                Logger.log(TAG, "opened serial port successfully");
                 if (_dlg != null) {
                     UIManager.sharedInstance().dismissProgressDialog(_dlg);
                     _dlg = null;
@@ -192,10 +199,19 @@ public class DeviceScanActivity extends ListActivity {
                 MotorApplication application = (MotorApplication)getApplication();
                 application.setSerialPort(_serialPort);
 
-                // start main menu activity
-                Intent intent = new Intent(this, MainActivity.class);
-                startActivity(intent);
-                finish();
+                Logger.log(TAG, "starting to init motor...");
+
+                _dlg = UIManager.sharedInstance().showProgressDialog(this, null, "initializing motor...", true);
+                _motor = new Motor(_serialPort);
+                Thread thread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        _motor.initMotor();
+                        Logger.log(TAG, "motor inited...");
+                        EventManager.sharedInstance().post(kMotorInitializedSuccess, _motor);
+                    }
+                });
+                thread.start();
             }
         }
         else if (EventManager.isEvent(e, SerialPort.kSerialPortDisconnectedNotification)) {
@@ -205,6 +221,23 @@ public class DeviceScanActivity extends ListActivity {
                     _dlg = null;
                 }
                 UIManager.sharedInstance().showToastMessage(this, "Failed to open serial port");
+            }
+        }
+        else if (EventManager.isEvent(e, kMotorInitializedSuccess)) {
+            if (_motor == e.object) {
+                if (_dlg != null) {
+                    UIManager.sharedInstance().dismissProgressDialog(_dlg);
+                    _dlg = null;
+                }
+                MotorApplication application = (MotorApplication)getApplication();
+                application.setMotor(_motor);
+
+                Logger.log(TAG, "kMotorInitializedSuccess, start main activity");
+
+                // start main menu activity
+                Intent intent = new Intent(this, MainActivity.class);
+                startActivity(intent);
+                finish();
             }
         }
     }
