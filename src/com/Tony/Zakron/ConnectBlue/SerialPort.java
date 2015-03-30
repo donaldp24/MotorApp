@@ -382,7 +382,7 @@ public class SerialPort {
         ReadData data = new ReadData();
         data.port = this;
         data.bytes = value;
-        EventManager.sharedInstance().post(kSerialPortReadDataNotification, this);
+        EventManager.sharedInstance().post(kSerialPortReadDataNotification, data);
     }
 
     protected void _writedCharacteristic(BlePeripheral peripheral, BluetoothGattCharacteristic characteristic, boolean success) {

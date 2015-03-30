@@ -353,19 +353,19 @@ public class Motor {
         Logger.log(TAG, "requestStatusPacket");
         byte chkSum;
         chkSum = 0x00;
-
+/*
         putch0((byte)0xAA);
         chkSum = putchc0(_address, chkSum);
         chkSum = putchc0((byte)0x0E, chkSum);    // R.Z. 110107  This is the new NOP  was  0x0d
         putch0(chkSum);
+*/
 
-        /*
         putch0((byte)0xAA);
         chkSum = putchc0(_address, chkSum);
         chkSum = putchc0((byte)0x13, chkSum);
-        chkSum = putchc0((byte)0x01, chkSum);
+        chkSum = putchc0((byte)0x1F, chkSum);
         putch0(chkSum);
-        */
+
 
         /*
         putch0((byte)0xAA);
@@ -404,7 +404,7 @@ public class Motor {
                 e.printStackTrace();
             }
             i++;
-            if (i >= 10)
+            if (i >= 100)
                 break;
             if (_newBufferSize >= statusPacketLength)
                 break;
@@ -535,15 +535,17 @@ public class Motor {
         9.   Use the Set Address command to assign any group addresses as needed.
         */
         /*** Flush PicServo ***/
-        for(int ii = 0; ii < /*255*/20; ii++) {
+        for(int ii = 0; ii < /*255*/15; ii++) {
             putch0((byte)0x00);
         }
         flush();
 
+        Logger.log(TAG, "calling addressMotor(1)");
         /*** Address our Motors ***/
         addressMotor((byte)1);
 
         /*** Defining our desired Status Packet ***/
+        Logger.log(TAG, "defining status packet...");
         statusPacketLength = 14;
         putch0((byte)0xAA);
         putch0(_address);
@@ -552,6 +554,7 @@ public class Motor {
         putch0((byte)(0x31 + _address));
         flush();
 
+        Logger.log(TAG, "receiveStatusPacket for defining status packet...");
         // request status packet
         recieveStatusPacket();
 
