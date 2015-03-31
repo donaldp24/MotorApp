@@ -12,6 +12,7 @@ public class CalibrationManager {
     public static final String TAG = "CalibrationManager";
 
     public static final String EVENT_STATE_UPDATED = "calibrationmanager_EVENT_STATE_UPDATED";
+    public static final String EVENT_STATE_DATA = "calibrationmanager_EVENT_STATE_DATA";
 
     private Motor _motor;
     private Context _context;
@@ -40,6 +41,12 @@ public class CalibrationManager {
     private Thread thread = null;
     private boolean _stopped = false;
 
+    public static class CalibratingData {
+        public boolean limit1;
+        public boolean limit2;
+        public boolean isCalibrated;
+    }
+
     public CalibrationManager(Context context, Motor motor) {
         _context = context;
         _motor = motor;
@@ -49,6 +56,7 @@ public class CalibrationManager {
         delta_A = 0;
         visualCount = 0;
         limitStatus = 0;
+        isCalibrated = 0;
 
         motoStatus = motor._status;
 
@@ -58,6 +66,15 @@ public class CalibrationManager {
     protected void sendAmuletString(String msg) {
         Logger.log(TAG, "%s", msg);
         EventManager.sharedInstance().post(EVENT_STATE_UPDATED, msg);
+    }
+
+    protected void sendStatus() {
+        CalibratingData data = new CalibratingData();
+        data.limit1 = (_motor.buffer()[0] & Motor.STATBIT_LIMITREAR) == Motor.STATBIT_LIMITREAR;
+        data.limit2 = (_motor.buffer()[0] & Motor.STATBIT_LIMITREAR) == Motor.STATBIT_LIMITRAM;
+        data.isCalibrated = isCalibrated != 0;
+
+        EventManager.sharedInstance().post(EVENT_STATE_DATA, data);
     }
 
     public void startCalibration() {
@@ -108,6 +125,8 @@ public class CalibrationManager {
             }
             limitStatus = 0;
             _phase = PHASE_CAL1;
+
+            sendStatus();
             Logger.log(TAG, "calibrating - change to PHASE_CAL1");
         }
         else if (_phase == PHASE_CAL1) {
@@ -140,6 +159,7 @@ public class CalibrationManager {
                 if ((_motor.buffer()[0] & Motor.STATBIT_LIMITREAR) != 0 && (limitStatus & 0x01) == 0) {
                     _motor.stopMotor();
                     sendAmuletString("Rear Limit");
+                    sendStatus();
                     limitStatus |= 0x01;
                 }
 
@@ -199,6 +219,7 @@ public class CalibrationManager {
                 if ((_motor.buffer()[0] & Motor.STATBIT_LIMITREAR) != Motor.STATBIT_LIMITREAR && (limitStatus & 0x01) == 0) {
                     _motor.stopMotor();
                     limitStatus |= 001;
+                    sendStatus();
                 }
 
                 // If all the motors are at their limit, get out of the loop and go to the next step
@@ -264,6 +285,7 @@ public class CalibrationManager {
                 if (_motor.getHomePosition() != 0 && (limitStatus & 0x01) == 0) {
                     _motor.stopMotor();
                     limitStatus |= 0x01;
+                    sendStatus();
                 }
 
                 if (limitStatus == 0x01) {
@@ -312,6 +334,7 @@ public class CalibrationManager {
             if (motoStatus == Motor.STATUS_ON) {
                 _motor.startMotor(); //Servo
                 sendAmuletString("Indexed");
+                sendStatus();
             }
 
             try {
@@ -327,6 +350,7 @@ public class CalibrationManager {
             else {
                 isCalibrated |= 0x01; // If the motor is off, say that it's calibrated
             }
+            sendStatus();
 
             try {
                 Thread.sleep(1000); // For visual pleasure

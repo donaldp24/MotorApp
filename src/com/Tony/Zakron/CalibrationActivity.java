@@ -68,6 +68,15 @@ public class CalibrationActivity extends BaseActivity implements View.OnClickLis
             String msg = (String)e.object;
             textStatus.setText(msg);
         }
+        else if (EventManager.isEvent(e, CalibrationManager.EVENT_STATE_DATA)) {
+            CalibrationManager.CalibratingData data = (CalibrationManager.CalibratingData)e.object;
+            if (data.isCalibrated)
+                ivCalibrated1.setImageResource(R.drawable.radio_selected);
+            if (data.limit1)
+                ivLimitSwitch1.setImageResource(R.drawable.radio_selected);
+            if (data.limit2)
+                ivLimitSwitch2.setImageResource(R.drawable.radio_selected);
+        }
     }
 
     @Override
@@ -81,6 +90,11 @@ public class CalibrationActivity extends BaseActivity implements View.OnClickLis
     }
 
     private void onGoClicked() {
+        ivLimitSwitch1.setImageResource(R.drawable.radio_normal);
+        ivLimitSwitch2.setImageResource(R.drawable.radio_normal);
+        ivCalibrated1.setImageResource(R.drawable.radio_normal);
+        ivCalibrated2.setImageResource(R.drawable.radio_normal);
+
         MotorApplication application = (MotorApplication)getApplication();
         _calibrationManager = new CalibrationManager(this, application.getMotor());
         _calibrationManager.startCalibration();
