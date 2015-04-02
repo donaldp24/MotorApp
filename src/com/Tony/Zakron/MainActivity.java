@@ -80,7 +80,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     }
 
     protected void onSettingsClicked() {
-        //
+        Intent intent = new Intent(this, SettingsActivity.class);
+        startActivity(intent);
     }
 
     public void onEventMainThread(SEvent e) {
