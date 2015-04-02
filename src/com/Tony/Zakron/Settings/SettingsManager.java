@@ -14,12 +14,12 @@ public class SettingsManager {
     private SharedPreferences.Editor _editor;
 
     public static final long DEFAULT_POSITIONERROR = 0xFA0; // 4000
-    public static final long DEFAULT_KP = 0x3E8; // 1000
-    public static final long DEFAULT_KD = 0x1388; // 5000
-    public static final long DEFAULT_KI = 0x32; // 50
-    public static final long DEFAULT_INTEGRATIONLIMIT = 0xC8; // 200
+    public static final long DEFAULT_KP = 1500;//0x3E8; // 1000
+    public static final long DEFAULT_KD = 5000;//0x1388; // 5000
+    public static final long DEFAULT_KI = 200;//0x32; // 50
+    public static final long DEFAULT_INTEGRATIONLIMIT = 0;//0xC8; // 200
     public static final long DEFAULT_OUTPUTLIMIT = 0xFF; // 255
-    public static final long DEFAULT_CURRENTLIMIT = 0x35; // 53
+    public static final long DEFAULT_CURRENTLIMIT = 0;//0x35; // 53
     public static final long DEFAULT_AMPDEADBAND = 0;
     public static final long DEFAULT_SERVORATE = 1;
     public static final long DEFAULT_SYSTEMVELOCITY = 1500000;

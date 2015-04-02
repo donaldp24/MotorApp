@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -353,6 +354,7 @@ public class SettingsActivity extends BaseActivity implements View.OnClickListen
 
     private void showDialog(String title, String message, final SettingValueListener listener) {
         final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER);
         new AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMessage(message)

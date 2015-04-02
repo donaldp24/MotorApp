@@ -224,7 +224,7 @@ public class Motor {
         chkSum = putchc0((byte)(SettingsManager.sharedInstance().getAmpDeadBand() & 0xFF), chkSum); //deadband compensation
 
         Logger.log(TAG, "SM = " + (SettingsManager.sharedInstance().getEncoderCounts() / 200));
-        chkSum = putchc0 ((byte)(SettingsManager.sharedInstance().getEncoderCounts() / 200), chkSum); // sm
+        chkSum = putchc0 ((byte)1, chkSum); // sm
 
         putch0(chkSum); //CheckSum
 
