@@ -186,34 +186,44 @@ public class Motor {
         chkSum = putchc0((byte)0xF6, chkSum); //command byte
 
 
+        Logger.log(TAG, "kp = " + SettingsManager.sharedInstance().getKP());
         longtobyte(SettingsManager.sharedInstance().getKP(), bytes);
         chkSum = putchc0(bytes[0], chkSum); //kp
         chkSum = putchc0(bytes[1], chkSum);
 
+        Logger.log(TAG, "kd = " + SettingsManager.sharedInstance().getKD());
         longtobyte(SettingsManager.sharedInstance().getKD(), bytes);
         chkSum = putchc0(bytes[0], chkSum); //kd
         chkSum = putchc0(bytes[1], chkSum);
 
+        Logger.log(TAG, "ki = " + SettingsManager.sharedInstance().getKI());
         longtobyte(SettingsManager.sharedInstance().getKI(), bytes);
         chkSum = putchc0(bytes[0], chkSum); //ki
         chkSum = putchc0(bytes[1], chkSum);
 
+        Logger.log(TAG, "IL = " + SettingsManager.sharedInstance().getIntegrationLimit());
         longtobyte(SettingsManager.sharedInstance().getIntegrationLimit(), bytes);
         chkSum = putchc0(bytes[0], chkSum); //integration limit
         chkSum = putchc0(bytes[1], chkSum);
 
+        Logger.log(TAG, "OL = " + SettingsManager.sharedInstance().getOutputLimit());
         chkSum = putchc0((byte)(SettingsManager.sharedInstance().getOutputLimit() & 0xFF), chkSum); //output limit
 
+        Logger.log(TAG, "CL = " + SettingsManager.sharedInstance().getCurrentLimit());
         chkSum = putchc0((byte)(SettingsManager.sharedInstance().getCurrentLimit() & 0xFF), chkSum); //current limit
 
+        Logger.log(TAG, "PE = " + SettingsManager.sharedInstance().getPositionError());
         longtobyte(SettingsManager.sharedInstance().getPositionError(), bytes);
         chkSum = putchc0(bytes[0], chkSum); //error limit
         chkSum = putchc0(bytes[1], chkSum);
 
+        Logger.log(TAG, "SR = " + SettingsManager.sharedInstance().getServoRate());
         chkSum = putchc0((byte)(SettingsManager.sharedInstance().getServoRate() & 0xFF), chkSum); //servo limit
 
+        Logger.log(TAG, "Amp = " + ((byte)(SettingsManager.sharedInstance().getAmpDeadBand() & 0xFF)) + (" : " + SettingsManager.sharedInstance().getAmpDeadBand()));
         chkSum = putchc0((byte)(SettingsManager.sharedInstance().getAmpDeadBand() & 0xFF), chkSum); //deadband compensation
 
+        Logger.log(TAG, "SM = " + (SettingsManager.sharedInstance().getEncoderCounts() / 200));
         chkSum = putchc0 ((byte)(SettingsManager.sharedInstance().getEncoderCounts() / 200), chkSum); // sm
 
         putch0(chkSum); //CheckSum

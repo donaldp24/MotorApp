@@ -212,8 +212,8 @@ public class SettingsActivity extends BaseActivity implements View.OnClickListen
                 new SettingValueListener() {
                     @Override
                     public void onSet(String value) {
-                        int intval = Integer.parseInt(value);
-                        SettingsManager.sharedInstance().setPositionError(intval);
+                        long longval = Long.parseLong(value);
+                        SettingsManager.sharedInstance().setPositionError(longval);
                         refreshTexts();
                     }
                 });
@@ -224,8 +224,8 @@ public class SettingsActivity extends BaseActivity implements View.OnClickListen
                 new SettingValueListener() {
                     @Override
                     public void onSet(String value) {
-                        int intval = Integer.parseInt(value);
-                        SettingsManager.sharedInstance().setKP(intval);
+                        long longval = Long.parseLong(value);
+                        SettingsManager.sharedInstance().setKP(longval);
                         refreshTexts();
                     }
                 });
@@ -236,8 +236,8 @@ public class SettingsActivity extends BaseActivity implements View.OnClickListen
                 new SettingValueListener() {
                     @Override
                     public void onSet(String value) {
-                        int intval = Integer.parseInt(value);
-                        SettingsManager.sharedInstance().setKD(intval);
+                        long longval = Long.parseLong(value);
+                        SettingsManager.sharedInstance().setKD(longval);
                         refreshTexts();
                     }
                 });
@@ -248,8 +248,8 @@ public class SettingsActivity extends BaseActivity implements View.OnClickListen
                 new SettingValueListener() {
                     @Override
                     public void onSet(String value) {
-                        int intval = Integer.parseInt(value);
-                        SettingsManager.sharedInstance().setKI(intval);
+                        long longval = Long.parseLong(value);
+                        SettingsManager.sharedInstance().setKI(longval);
                         refreshTexts();
                     }
                 });
@@ -260,8 +260,8 @@ public class SettingsActivity extends BaseActivity implements View.OnClickListen
                 new SettingValueListener() {
                     @Override
                     public void onSet(String value) {
-                        int intval = Integer.parseInt(value);
-                        SettingsManager.sharedInstance().setIntegrationLimit(intval);
+                        long longval = Long.parseLong(value);
+                        SettingsManager.sharedInstance().setIntegrationLimit(longval);
                         refreshTexts();
                     }
                 });
@@ -272,8 +272,8 @@ public class SettingsActivity extends BaseActivity implements View.OnClickListen
                 new SettingValueListener() {
                     @Override
                     public void onSet(String value) {
-                        int intval = Integer.parseInt(value);
-                        SettingsManager.sharedInstance().setOutputLimit(intval);
+                        long longval = Long.parseLong(value);
+                        SettingsManager.sharedInstance().setOutputLimit(longval);
                         refreshTexts();
                     }
                 });
@@ -284,8 +284,8 @@ public class SettingsActivity extends BaseActivity implements View.OnClickListen
                 new SettingValueListener() {
                     @Override
                     public void onSet(String value) {
-                        int intval = Integer.parseInt(value);
-                        SettingsManager.sharedInstance().setCurrentLimit(intval);
+                        long longval = Long.parseLong(value);
+                        SettingsManager.sharedInstance().setCurrentLimit(longval);
                         refreshTexts();
                     }
                 });
@@ -296,8 +296,8 @@ public class SettingsActivity extends BaseActivity implements View.OnClickListen
                 new SettingValueListener() {
                     @Override
                     public void onSet(String value) {
-                        int intval = Integer.parseInt(value);
-                        SettingsManager.sharedInstance().setAmpDeadBand(intval);
+                        long longval = Long.parseLong(value);
+                        SettingsManager.sharedInstance().setAmpDeadBand(longval);
                         refreshTexts();
                     }
                 });
@@ -308,8 +308,8 @@ public class SettingsActivity extends BaseActivity implements View.OnClickListen
                 new SettingValueListener() {
                     @Override
                     public void onSet(String value) {
-                        int intval = Integer.parseInt(value);
-                        SettingsManager.sharedInstance().setServoRate(intval);
+                        long longval = Long.parseLong(value);
+                        SettingsManager.sharedInstance().setServoRate(longval);
                         refreshTexts();
                     }
                 });
@@ -320,8 +320,8 @@ public class SettingsActivity extends BaseActivity implements View.OnClickListen
                 new SettingValueListener() {
                     @Override
                     public void onSet(String value) {
-                        int intval = Integer.parseInt(value);
-                        SettingsManager.sharedInstance().setSystemVelocity(intval);
+                        long longval = Long.parseLong(value);
+                        SettingsManager.sharedInstance().setSystemVelocity(longval);
                         refreshTexts();
                     }
                 });
@@ -332,8 +332,8 @@ public class SettingsActivity extends BaseActivity implements View.OnClickListen
                 new SettingValueListener() {
                     @Override
                     public void onSet(String value) {
-                        int intval = Integer.parseInt(value);
-                        SettingsManager.sharedInstance().setSystemAcceleration(intval);
+                        long longval = Long.parseLong(value);
+                        SettingsManager.sharedInstance().setSystemAcceleration(longval);
                         refreshTexts();
                     }
                 });
@@ -344,8 +344,8 @@ public class SettingsActivity extends BaseActivity implements View.OnClickListen
                 new SettingValueListener() {
                     @Override
                     public void onSet(String value) {
-                        int intval = Integer.parseInt(value);
-                        SettingsManager.sharedInstance().setEncoderCounts(intval);
+                        long longval = Long.parseLong(value);
+                        SettingsManager.sharedInstance().setEncoderCounts(longval);
                         refreshTexts();
                     }
                 });

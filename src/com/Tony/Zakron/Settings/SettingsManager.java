@@ -13,18 +13,18 @@ public class SettingsManager {
     private SharedPreferences _sharedPreferences;
     private SharedPreferences.Editor _editor;
 
-    public static final int DEFAULT_POSITIONERROR = 0xFA0; // 4000
-    public static final int DEFAULT_KP = 0x3E8; // 1000
-    public static final int DEFAULT_KD = 0x1388; // 5000
-    public static final int DEFAULT_KI = 0x32; // 50
-    public static final int DEFAULT_INTEGRATIONLIMIT = 0xC8; // 200
-    public static final int DEFAULT_OUTPUTLIMIT = 0xFF; // 255
-    public static final int DEFAULT_CURRENTLIMIT = 0x35; // 53
-    public static final int DEFAULT_AMPDEADBAND = 0;
-    public static final int DEFAULT_SERVORATE = 1;
-    public static final int DEFAULT_SYSTEMVELOCITY = 1500000;
-    public static final int DEFAULT_SYSTEMACCELERATION = 1000;
-    public static final int DEFAULT_ENCODERCOUNTS = 200;
+    public static final long DEFAULT_POSITIONERROR = 0xFA0; // 4000
+    public static final long DEFAULT_KP = 0x3E8; // 1000
+    public static final long DEFAULT_KD = 0x1388; // 5000
+    public static final long DEFAULT_KI = 0x32; // 50
+    public static final long DEFAULT_INTEGRATIONLIMIT = 0xC8; // 200
+    public static final long DEFAULT_OUTPUTLIMIT = 0xFF; // 255
+    public static final long DEFAULT_CURRENTLIMIT = 0x35; // 53
+    public static final long DEFAULT_AMPDEADBAND = 0;
+    public static final long DEFAULT_SERVORATE = 1;
+    public static final long DEFAULT_SYSTEMVELOCITY = 1500000;
+    public static final long DEFAULT_SYSTEMACCELERATION = 1000;
+    public static final long DEFAULT_ENCODERCOUNTS = 200;
 
     public static SettingsManager initialize(Context context) {
         if (_instance == null)
@@ -43,110 +43,110 @@ public class SettingsManager {
         _editor = _sharedPreferences.edit();
     }
 
-    public int getPositionError() {
-        return _sharedPreferences.getInt("positionerror", DEFAULT_POSITIONERROR);
+    public long getPositionError() {
+        return _sharedPreferences.getLong("positionerror", DEFAULT_POSITIONERROR);
     }
-    public void setPositionError(int positionError) {
-        _editor.putInt("positionerror", positionError);
+    public void setPositionError(long positionError) {
+        _editor.putLong("positionerror", positionError);
         _editor.commit();
     }
 
-    public int getKP() {
-        return _sharedPreferences.getInt("kp", DEFAULT_KP);
+    public long getKP() {
+        return _sharedPreferences.getLong("kp", DEFAULT_KP);
     }
 
-    public void setKP(int kp) {
-        _editor.putInt("kp", kp);
+    public void setKP(long kp) {
+        _editor.putLong("kp", kp);
         _editor.commit();
     }
 
-    public int getKD() {
-        return _sharedPreferences.getInt("kd", DEFAULT_KD);
+    public long getKD() {
+        return _sharedPreferences.getLong("kd", DEFAULT_KD);
     }
 
-    public void setKD(int kd) {
-        _editor.putInt("kd", kd);
+    public void setKD(long kd) {
+        _editor.putLong("kd", kd);
         _editor.commit();
     }
 
-    public int getKI() {
-        return _sharedPreferences.getInt("ki", DEFAULT_KI);
+    public long getKI() {
+        return _sharedPreferences.getLong("ki", DEFAULT_KI);
     }
 
-    public void setKI(int ki) {
-        _editor.putInt("ki", ki);
+    public void setKI(long ki) {
+        _editor.putLong("ki", ki);
         _editor.commit();
     }
 
-    public int getIntegrationLimit() {
-        return _sharedPreferences.getInt("integrationlimit", DEFAULT_INTEGRATIONLIMIT);
+    public long getIntegrationLimit() {
+        return _sharedPreferences.getLong("integrationlimit", DEFAULT_INTEGRATIONLIMIT);
     }
 
-    public void setIntegrationLimit(int integrationLimit) {
-        _editor.putInt("integrationlimit", integrationLimit);
+    public void setIntegrationLimit(long integrationLimit) {
+        _editor.putLong("integrationlimit", integrationLimit);
         _editor.commit();
     }
 
-    public int getOutputLimit() {
-        return  _sharedPreferences.getInt("outputlimit", DEFAULT_OUTPUTLIMIT);
+    public long getOutputLimit() {
+        return  _sharedPreferences.getLong("outputlimit", DEFAULT_OUTPUTLIMIT);
     }
 
-    public void setOutputLimit(int outputLimit) {
-        _editor.putInt("outputlimit", outputLimit);
+    public void setOutputLimit(long outputLimit) {
+        _editor.putLong("outputlimit", outputLimit);
         _editor.commit();
     }
 
-    public int getCurrentLimit() {
-        return _sharedPreferences.getInt("currentlimit", DEFAULT_CURRENTLIMIT);
+    public long getCurrentLimit() {
+        return _sharedPreferences.getLong("currentlimit", DEFAULT_CURRENTLIMIT);
     }
 
-    public void setCurrentLimit(int currentLimit) {
-        _editor.putInt("currentlimit", currentLimit);
+    public void setCurrentLimit(long currentLimit) {
+        _editor.putLong("currentlimit", currentLimit);
         _editor.commit();
     }
 
-    public int getAmpDeadBand() {
-        return _sharedPreferences.getInt("ampdeadband", DEFAULT_AMPDEADBAND);
+    public long getAmpDeadBand() {
+        return _sharedPreferences.getLong("ampdeadband", DEFAULT_AMPDEADBAND);
     }
 
-    public void setAmpDeadBand(int ampDeadBand) {
-        _editor.putInt("ampdeadband", ampDeadBand);
+    public void setAmpDeadBand(long ampDeadBand) {
+        _editor.putLong("ampdeadband", ampDeadBand);
         _editor.commit();
     }
 
-    public int getServoRate() {
-        return _sharedPreferences.getInt("servorate", DEFAULT_SERVORATE);
+    public long getServoRate() {
+        return _sharedPreferences.getLong("servorate", DEFAULT_SERVORATE);
     }
 
-    public void setServoRate(int servoRate) {
-        _editor.putInt("servorate", servoRate);
+    public void setServoRate(long servoRate) {
+        _editor.putLong("servorate", servoRate);
         _editor.commit();
     }
 
-    public int getSystemVelocity() {
-        return _sharedPreferences.getInt("systemvelocity", DEFAULT_SYSTEMVELOCITY);
+    public long getSystemVelocity() {
+        return _sharedPreferences.getLong("systemvelocity", DEFAULT_SYSTEMVELOCITY);
     }
 
-    public void setSystemVelocity(int systemVelocity) {
-        _editor.putInt("systemvelocity", systemVelocity);
+    public void setSystemVelocity(long systemVelocity) {
+        _editor.putLong("systemvelocity", systemVelocity);
         _editor.commit();
     }
 
-    public int getSystemAcceleration() {
-        return _sharedPreferences.getInt("systemacceleration", DEFAULT_SYSTEMACCELERATION);
+    public long getSystemAcceleration() {
+        return _sharedPreferences.getLong("systemacceleration", DEFAULT_SYSTEMACCELERATION);
     }
 
-    public void setSystemAcceleration(int systemAcceleration) {
-        _editor.putInt("systemacceleration", systemAcceleration);
+    public void setSystemAcceleration(long systemAcceleration) {
+        _editor.putLong("systemacceleration", systemAcceleration);
         _editor.commit();
     }
 
-    public int getEncoderCounts() {
-        return _sharedPreferences.getInt("encodercounts", DEFAULT_ENCODERCOUNTS);
+    public long getEncoderCounts() {
+        return _sharedPreferences.getLong("encodercounts", DEFAULT_ENCODERCOUNTS);
     }
 
-    public void setEncoderCounts(int encoderCounts) {
-        _editor.putInt("encodercounts", encoderCounts);
+    public void setEncoderCounts(long encoderCounts) {
+        _editor.putLong("encodercounts", encoderCounts);
         _editor.commit();
     }
 
