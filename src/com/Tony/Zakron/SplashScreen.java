@@ -13,6 +13,7 @@ import android.view.ViewTreeObserver;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 import com.Tony.Zakron.Common.AppContext;
+import com.Tony.Zakron.Settings.SettingsManager;
 import com.Tony.Zakron.ble.BleManager;
 import com.Tony.Zakron.event.EventManager;
 import com.crashlytics.android.Crashlytics;
@@ -79,6 +80,7 @@ public class SplashScreen extends Activity {
         UIManager.initialize(getApplicationContext());
         EventManager.initalize(getApplicationContext());
         AppContext.initialize(getApplicationContext());
+        SettingsManager.initialize(getApplicationContext());
 
         // scan bluetooth
         // BleManager.sharedInstance().scanForPeripheralsWithServices(null, true);

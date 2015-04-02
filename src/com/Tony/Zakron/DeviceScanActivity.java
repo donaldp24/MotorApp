@@ -75,8 +75,9 @@ public class DeviceScanActivity extends ListActivity {
             @Override
             public void run() {
                 if (scanUpdated && !BleScanner.sharedInstance().isStopped()) {
-                    ArrayList<BlePeripheral> scannedPeripherals = BleManager.sharedInstance().getScannedPeripherals();
+                    final ArrayList<BlePeripheral> scannedPeripherals = BleManager.sharedInstance().getScannedPeripherals();
                     mLeDeviceListAdapter.replaceWith(scannedPeripherals);
+
                     scanUpdated = false;
 
                     int nCount = scannedPeripherals.size();
@@ -123,7 +124,8 @@ public class DeviceScanActivity extends ListActivity {
             menu.findItem(R.id.menu_stop).setVisible(false);
             menu.findItem(R.id.menu_scan).setVisible(true);
             menu.findItem(R.id.menu_refresh).setActionView(null);
-        } else {
+        }
+        else {
             menu.findItem(R.id.menu_stop).setVisible(true);
             menu.findItem(R.id.menu_scan).setVisible(false);
             menu.findItem(R.id.menu_refresh).setActionView(
@@ -142,9 +144,17 @@ public class DeviceScanActivity extends ListActivity {
             case R.id.menu_stop:
                 stopScan();
                 break;
+            case R.id.menu_settings:
+                onSettings();
+                break;
         }
         invalidateOptionsMenu();
         return true;
+    }
+
+    private void onSettings() {
+        Intent intent = new Intent(this, SettingsActivity.class);
+        startActivity(intent);
     }
 
     @Override
@@ -259,9 +269,20 @@ public class DeviceScanActivity extends ListActivity {
             mInflator = DeviceScanActivity.this.getLayoutInflater();
         }
 
-        public void replaceWith(ArrayList<BlePeripheral> devices) {
-            mPeripherals = devices;
-            notifyDataSetChanged();
+        public void replaceWith(final ArrayList<BlePeripheral> devices) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mPeripherals = new ArrayList<BlePeripheral>();
+                    for (BlePeripheral device : devices) {
+                        mPeripherals.add(device);
+                    }
+
+
+                    notifyDataSetChanged();
+                }
+            });
+
         }
 
         public BlePeripheral getDevice(int position) {
@@ -270,6 +291,7 @@ public class DeviceScanActivity extends ListActivity {
 
         public void clear() {
             mPeripherals.clear();
+            notifyDataSetChanged();
         }
 
         @Override

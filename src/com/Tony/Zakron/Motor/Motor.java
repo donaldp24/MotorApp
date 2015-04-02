@@ -3,6 +3,7 @@ package com.Tony.Zakron.Motor;
 import android.util.Log;
 import com.Tony.Zakron.Common.CommonMethods;
 import com.Tony.Zakron.ConnectBlue.SerialPort;
+import com.Tony.Zakron.Settings.SettingsManager;
 import com.Tony.Zakron.event.EventManager;
 import com.Tony.Zakron.event.SEvent;
 import com.Tony.Zakron.helper.Logger;
@@ -57,9 +58,9 @@ public class Motor {
     public int packetFlag = 0;
     public byte _address = 0;
     public byte _status = STATUS_OFF;
-    public long _gain[] = {0x3E8, 0x1388, 0x32, 0xC8, 0xFF, 0x35, 0xFA0, 0x01, 00};
-    public long _systemVelocity = 1500000;
-    public long _systemAcceleration = 1000;
+    public long _gain[] = {0x3E8 /*kp*/, 0x1388 /*kd*/, 0x32 /*ki*/, 0xC8 /*IL*/, 0xFF/*OL*/, 0x35/*CL*/, 0xFA0/*EL*/, 0x01/*SR*/, 00/*DB*/, 01/*SM*/};
+    public long _systemVelocity = SettingsManager.DEFAULT_SYSTEMVELOCITY;
+    public long _systemAcceleration = SettingsManager.DEFAULT_SYSTEMACCELERATION;
 
     private byte _commandBuffer[] = new byte[160];
     private byte _commandLength = 0;
@@ -101,6 +102,9 @@ public class Motor {
             EventManager.sharedInstance().register(this);
             registered = true;
         }
+
+        _systemVelocity = SettingsManager.sharedInstance().getSystemVelocity();
+        _systemAcceleration = SettingsManager.sharedInstance().getSystemAcceleration();
     }
 
     public byte[] buffer() {
@@ -181,35 +185,36 @@ public class Motor {
         chkSum = putchc0(_address, chkSum);
         chkSum = putchc0((byte)0xF6, chkSum); //command byte
 
-        longtobyte(_gain[0], bytes);
+
+        longtobyte(SettingsManager.sharedInstance().getKP(), bytes);
         chkSum = putchc0(bytes[0], chkSum); //kp
         chkSum = putchc0(bytes[1], chkSum);
 
-        longtobyte(_gain[1], bytes);
+        longtobyte(SettingsManager.sharedInstance().getKD(), bytes);
         chkSum = putchc0(bytes[0], chkSum); //kd
         chkSum = putchc0(bytes[1], chkSum);
 
-        longtobyte(_gain[2], bytes);
+        longtobyte(SettingsManager.sharedInstance().getKI(), bytes);
         chkSum = putchc0(bytes[0], chkSum); //ki
         chkSum = putchc0(bytes[1], chkSum);
 
-        longtobyte(_gain[3], bytes);
+        longtobyte(SettingsManager.sharedInstance().getIntegrationLimit(), bytes);
         chkSum = putchc0(bytes[0], chkSum); //integration limit
         chkSum = putchc0(bytes[1], chkSum);
 
-        chkSum = putchc0((byte)(_gain[4] & 0xFF), chkSum); //output limit
+        chkSum = putchc0((byte)(SettingsManager.sharedInstance().getOutputLimit() & 0xFF), chkSum); //output limit
 
-        chkSum = putchc0((byte)(_gain[5] & 0xFF), chkSum); //current limit
+        chkSum = putchc0((byte)(SettingsManager.sharedInstance().getCurrentLimit() & 0xFF), chkSum); //current limit
 
-        longtobyte(_gain[6], bytes);
+        longtobyte(SettingsManager.sharedInstance().getPositionError(), bytes);
         chkSum = putchc0(bytes[0], chkSum); //error limit
         chkSum = putchc0(bytes[1], chkSum);
 
-        chkSum = putchc0((byte)(_gain[7] & 0xFF), chkSum); //servo limit
+        chkSum = putchc0((byte)(SettingsManager.sharedInstance().getServoRate() & 0xFF), chkSum); //servo limit
 
-        chkSum = putchc0((byte)(_gain[8] & 0xFF), chkSum); //deadband compensation
+        chkSum = putchc0((byte)(SettingsManager.sharedInstance().getAmpDeadBand() & 0xFF), chkSum); //deadband compensation
 
-        chkSum = putchc0 ((byte)01, chkSum); //added by me
+        chkSum = putchc0 ((byte)(SettingsManager.sharedInstance().getEncoderCounts() / 200), chkSum); // sm
 
         putch0(chkSum); //CheckSum
 
